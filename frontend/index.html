@@ -31,11 +31,11 @@
             <div class="col-md-12">
                 <div class="card p-3">
                     <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-sliders me-2"></i>Panel de Control Operativo</h5>
-                    <div class="d-flex flex-wrap gap-3">
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalControlador">
                             <i class="fa-solid fa-user-plus me-1"></i> Registrar Controlador
                         </button>
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTurno">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTurno" onclick="prepararModalTurno()">
                             <i class="fa-solid fa-calendar-check me-1"></i> Asignar Turno
                         </button>
                         <a href="http://127.0.0.1:8000/docs" target="_blank" class="btn btn-outline-secondary">
@@ -46,11 +46,35 @@
             </div>
         </div>
 
-        <!-- Matriz General de Personal y Turnos -->
-        <div class="row">
+        <!-- Sección de Reportes PDF -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card p-3 bg-light border">
+                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-file-pdf me-2"></i>Generación de Orden de Servicio (PDF Oficial)</h5>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="pdfFechaInicio">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Fecha Fin</label>
+                            <input type="date" class="form-control" id="pdfFechaFin">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-danger w-100" onclick="descargarPDFOrdenServicio()">
+                                <i class="fa-solid fa-download me-1"></i> Descargar Orden de Servicio PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matriz General de Personal -->
+        <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card p-3">
-                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-table me-2"></i>Personal Registrado y Estado</h5>
+                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-users me-2"></i>Personal Registrado y Estado</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped align-middle" id="tablaControladores">
                             <thead class="table-dark">
@@ -62,6 +86,30 @@
                                     <th>Vencimiento Psicofísico</th>
                                     <th>Estado</th>
                                     <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dinámico por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuadrante / Turnos Asignados -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card p-3">
+                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-calendar-days me-2"></i>Turnos Asignados en el Cuadrante</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle" id="tablaTurnos">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Código Turno</th>
+                                    <th>Controlador (ID / Nombre)</th>
+                                    <th>Asignación Automática / Reglas</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,6 +154,47 @@
                             <input type="date" class="form-control" id="aptitud_psicofisica_vencimiento" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Guardar Controlador</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Asignar Turno -->
+    <div class="modal fade" id="modalTurno" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-calendar-check me-2"></i>Asignar Turno Operativo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formTurno">
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Controlador</label>
+                            <select class="form-select" id="selectControlador" required>
+                                <!-- Dinámico por JS -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Código del Turno (FAC)</label>
+                            <select class="form-select" id="selectTurnoCodigo" required>
+                                <option value="TM">TM - Torre Mañana (07:00 - 13:00)</option>
+                                <option value="TT">TT - Torre Tarde (13:00 - 19:00)</option>
+                                <option value="TN">TN - Torre Noche (19:00 - 07:00)</option>
+                                <option value="SM">SM - Supervisor Mañana (07:00 - 13:00)</option>
+                                <option value="ST">ST - Supervisor Tarde (13:00 - 19:00)</option>
+                                <option value="AM">AM - Área Mañana (07:00 - 13:00)</option>
+                                <option value="AT">AT - Área Tarde (13:00 - 19:00)</option>
+                                <option value="HU">HU - Horario Oficina (07:30 - 17:00)</option>
+                                <option value="DISP">DISP - Disponible 24h (Obligatorio post-tarde/noche)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha de Asignación</label>
+                            <input type="date" class="form-control" id="fechaTurno" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Validar y Asignar Turno</button>
                     </form>
                 </div>
             </div>
