@@ -6,6 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     cargarControladores();
     cargarMatriz();
 
+    // Vincular el botón de descarga del PDF de Orden de Servicio
+    const btnDescargarPdf = document.getElementById("btnDescargarPdf");
+    if (btnDescargarPdf) {
+        btnDescargarPdf.addEventListener("click", descargarPDFOrdenServicio);
+    }
+
 // Formulario Registro Controlador
     const formControlador = document.getElementById("formControlador");
     if (formControlador) {
@@ -389,12 +395,15 @@ async function eliminarControlador(id) {
 function descargarPDFOrdenServicio() {
     const fInicio = document.getElementById("pdfFechaInicio").value;
     const fFin = document.getElementById("pdfFechaFin").value;
+    const asesor = encodeURIComponent(document.getElementById("asesorNav").value);
+    const gruco = encodeURIComponent(document.getElementById("cmdGruco").value);
+    const esnav = encodeURIComponent(document.getElementById("cmdEsnav").value);
 
     if (!fInicio || !fFin) {
         alert("Por favor seleccione la fecha de inicio y la fecha fin para el reporte PDF.");
         return;
     }
 
-    const url = `${API_URL}/reportes/orden-servicio?fecha_inicio=${fInicio}&fecha_fin=${fFin}`;
+    const url = `${API_URL}/reportes/orden-servicio?fecha_inicio=${fInicio}&fecha_fin=${fFin}&asesor_nav=${asesor}&comandante_gruco=${gruco}&comandante_esnav=${esnav}`;
     window.open(url, "_blank");
 }

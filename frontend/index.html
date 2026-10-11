@@ -138,30 +138,41 @@
             </div>
         </div>
 
-        <!-- Sección de Reportes PDF -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="card p-3 bg-light border">
-                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-file-pdf me-2"></i>Generación de Orden de Servicio (PDF Oficial)</h5>
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Fecha Inicio</label>
-                            <input type="date" class="form-control" id="pdfFechaInicio">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Fecha Fin</label>
-                            <input type="date" class="form-control" id="pdfFechaFin">
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-danger w-100" onclick="descargarPDFOrdenServicio()">
-                                <i class="fa-solid fa-download me-1"></i> Descargar Orden de Servicio PDF
-                            </button>
-                        </div>
-                    </div>
-                </div>
+       <!-- Sección Generación de Orden de Servicio (PDF Oficial) -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fa-solid fa-file-pdf me-2"></i>Generación de Orden de Servicio (PDF Oficial)</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Fecha Inicio</label>
+                <input type="date" class="form-control" id="pdfFechaInicio" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Fecha Fin</label>
+                <input type="date" class="form-control" id="pdfFechaFin" required>
             </div>
         </div>
-
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Técnico Asesor Serv. Nav. Aérea</label>
+                <input type="text" class="form-control" id="asesorNav" value="Asesor Navegación Aérea" placeholder="Grado y Nombre">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Comandante GRUCO-11</label>
+                <input type="text" class="form-control" id="cmdGruco" value="Comandante GRUCO-11" placeholder="Grado y Nombre">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Comandante ESNAV-115</label>
+                <input type="text" class="form-control" id="cmdEsnav" value="Comandante ESNAV-115" placeholder="Grado y Nombre">
+            </div>
+        </div>
+        <button class="btn btn-danger w-100" id="btnDescargarPdf">
+            <i class="fa-solid fa-download me-2"></i>Descargar Orden de Servicio PDF
+        </button>
+    </div>
+</div>
         <!-- Tabla de Personal Registrado -->
         <div class="row">
             <div class="col-md-12">
