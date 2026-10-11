@@ -26,11 +26,11 @@ def obtener_matriz_mensual(anio: int = Query(2026), mes: int = Query(9), db: Ses
     
     for idx, ctrl in enumerate(controladores, start=1):
         # Formato militar: Grado, Apellidos, Nombres y Número de Curso
-        curso_str = f" - Crs {ctrl.numero_curso}" if ctrl.numero_curso else ""
+        curso_str = f" - {ctrl.numero_curso}" if ctrl.numero_curso else ""
         fila = {
             "id": ctrl.id,
             "numero_orden": idx,
-            "nombre_completo": f"{ctrl.grado}. {ctrl.apellidos} {ctrl.nombres}{curso_str} ({ctrl.identificacion[-2:]})".upper(),
+            "nombre_completo": f"{ctrl.grado}. {ctrl.apellidos} {ctrl.nombres}{curso_str}".upper(),
             "dias": {}
         }
         for dia in range(1, num_dias + 1):

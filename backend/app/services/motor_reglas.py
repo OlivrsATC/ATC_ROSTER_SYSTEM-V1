@@ -17,10 +17,12 @@ class MotorReglasATC:
         if controlador.aptitud_psicofisica_vencimiento < fecha_turno:
             return False
 
-        # Validación de novedades (Vacaciones, incapacidad, comisiones, etc.)
-        for novedad in controlador.novedades:
-            if novedad.fecha_inicio <= fecha_turno <= novedad.fecha_fin:
-                return False  # Bloqueo absoluto por novedad
+        # Validación segura de novedades (evita el error si la propiedad no existe)
+        novedades = getattr(controlador, 'novedades', None)
+        if novedades:
+            for novedad in novedades:
+                if novedad.fecha_inicio <= fecha_turno <= novedad.fecha_fin:
+                    return False  # Bloqueo absoluto por novedad
 
         return True
 
