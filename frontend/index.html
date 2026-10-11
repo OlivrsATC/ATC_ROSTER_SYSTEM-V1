@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATC Roster System - CACOM-1</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Navbar Institucional -->
+    <nav class="navbar navbar-dark bg-dark shadow-sm py-3">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1 fw-bold">
+                <i class="fa-solid fa-plane-departure me-2"></i> CACOM-1 | Escuadrón de Navegación Aérea 115
+            </span>
+            <span class="text-light small">Sistema de Programación Automática (Directiva No. 061)</span>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container-fluid my-4">
+        
+        <!-- Panel de Control y Acciones -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card p-3">
+                    <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-sliders me-2"></i>Panel de Control Operativo</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalControlador">
+                            <i class="fa-solid fa-user-plus me-1"></i> Registrar Controlador
+                        </button>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTurno">
+                            <i class="fa-solid fa-calendar-check me-1"></i> Asignar Turno
+                        </button>
+                        <a href="http://127.0.0.1:8000/docs" target="_blank" class="btn btn-outline-secondary">
+                            <i class="fa-solid fa-book me-1"></i> Documentación API (Swagger)
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matriz General de Personal y Turnos -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card p-3">
+                    <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-table me-2"></i>Personal Registrado y Estado</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped align-middle" id="tablaControladores">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Cédula</th>
+                                    <th>Nombres y Apellidos</th>
+                                    <th>Correo Electrónico</th>
+                                    <th>Rol</th>
+                                    <th>Vencimiento Psicofísico</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dinámico por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Registrar Controlador -->
+    <div class="modal fade" id="modalControlador" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i>Registrar Nuevo Controlador</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formControlador">
+                        <div class="mb-3">
+                            <label class="form-label">Cédula / Identificación</label>
+                            <input type="text" class="form-control" id="identificacion" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombres</label>
+                            <input type="text" class="form-control" id="nombres" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Apellidos</label>
+                            <input type="text" class="form-control" id="apellidos" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Vencimiento Aptitud Psicofísica</label>
+                            <input type="date" class="form-control" id="aptitud_psicofisica_vencimiento" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Guardar Controlador</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
