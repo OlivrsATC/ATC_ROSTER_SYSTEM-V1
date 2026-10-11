@@ -3,80 +3,85 @@ let listaControladoresCache = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     cargarControladores();
-    cargarTurnosAsignados();
+    cargarMatriz();
 
     // Formulario Registro Controlador
     const formControlador = document.getElementById("formControlador");
-    formControlador.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    if (formControlador) {
+        formControlador.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-        const data = {
-            identificacion: document.getElementById("identificacion").value,
-            nombres: document.getElementById("nombres").value,
-            apellidos: document.getElementById("apellidos").value,
-            email: document.getElementById("email").value,
-            aptitud_psicofisica_vencimiento: document.getElementById("aptitud_psicofisica_vencimiento").value,
-            rol: "CONTROLADOR",
-            activo: true,
-            autonomias: []
-        };
+            const data = {
+                identificacion: document.getElementById("identificacion").value,
+                nombres: document.getElementById("nombres").value,
+                apellidos: document.getElementById("apellidos").value,
+                email: document.getElementById("email").value,
+                aptitud_psicofisica_vencimiento: document.getElementById("aptitud_psicofisica_vencimiento").value,
+                rol: "CONTROLADOR",
+                activo: true,
+                autonomias: []
+            };
 
-        try {
-            const response = await fetch(`${API_URL}/controladores/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch(`${API_URL}/controladores/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
 
-            if (!response.ok) {
-                const err = await response.json();
-                alert(`Error: ${err.detail}`);
-                return;
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert(`Error: ${err.detail}`);
+                    return;
+                }
+
+                alert("Controlador registrado exitosamente.");
+                formControlador.reset();
+                bootstrap.Modal.getInstance(document.getElementById("modalControlador")).hide();
+                cargarControladores();
+                cargarMatriz();
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("No se pudo conectar con el servidor backend.");
             }
+        });
+    }
 
-            alert("Controlador registrado exitosamente.");
-            formControlador.reset();
-            bootstrap.Modal.getInstance(document.getElementById("modalControlador")).hide();
-            cargarControladores();
-        } catch (error) {
-            console.error("Error de conexión:", error);
-            alert("No se pudo conectar con el servidor backend.");
-        }
-    });
-
-    // Formulario Asignación de Turno
+    // Formulario Asignación Individual de Turno
     const formTurno = document.getElementById("formTurno");
-    formTurno.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    if (formTurno) {
+        formTurno.addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-        const data = {
-            controlador_id: document.getElementById("selectControlador").value,
-            turno_codigo: document.getElementById("selectTurnoCodigo").value,
-            fecha: document.getElementById("fechaTurno").value
-        };
+            const data = {
+                controlador_id: document.getElementById("selectControlador").value,
+                turno_codigo: document.getElementById("selectTurnoCodigo").value,
+                fecha: document.getElementById("fechaTurno").value
+            };
 
-        try {
-            const response = await fetch(`${API_URL}/turnos/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch(`${API_URL}/turnos/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
 
-            if (!response.ok) {
-                const err = await response.json();
-                alert(`⚠️ RESTRICCIÓN OPERATIVA (Motor de Reglas):\n\n${err.detail}`);
-                return;
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert(`⚠️ RESTRICCIÓN OPERATIVA (Motor de Reglas):\n\n${err.detail}`);
+                    return;
+                }
+
+                alert("¡Turno asignado exitosamente validando normas de fatiga!");
+                formTurno.reset();
+                bootstrap.Modal.getInstance(document.getElementById("modalTurno")).hide();
+                cargarMatriz();
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("No se pudo conectar con el servidor backend.");
             }
-
-            alert("¡Turno asignado exitosamente validando normas de fatiga!");
-            formTurno.reset();
-            bootstrap.Modal.getInstance(document.getElementById("modalTurno")).hide();
-            cargarTurnosAsignados();
-        } catch (error) {
-            console.error("Error de conexión:", error);
-            alert("No se pudo conectar con el servidor backend.");
-        }
-    });
+        });
+    }
 });
 
 async function cargarControladores() {
@@ -85,6 +90,7 @@ async function cargarControladores() {
         listaControladoresCache = await response.json();
         
         const tbody = document.querySelector("#tablaControladores tbody");
+        if (!tbody) return;
         tbody.innerHTML = "";
 
         if (listaControladoresCache.length === 0) {
@@ -114,8 +120,76 @@ async function cargarControladores() {
     }
 }
 
+async function cargarMatriz() {
+    const mesSelect = document.getElementById("selectMes");
+    if (!mesSelect) return;
+    const mes = mesSelect.value;
+
+    try {
+        const res = await fetch(`${API_URL}/cuadrante/matriz?anio=2026&mes=${mes}`);
+        const data = await res.json();
+
+        const thead = document.getElementById("headerMatriz");
+        const tbody = document.getElementById("bodyMatriz");
+
+        // Cabecera de días (1 al 30/31)
+        let headerHtml = `<tr><th>#</th><th class="text-start">CONTROLADOR</th>`;
+        for (let d = 1; d <= data.total_dias; d++) {
+            headerHtml += `<th>${d}</th>`;
+        }
+        headerHtml += `</tr>`;
+        thead.innerHTML = headerHtml;
+
+        // Filas del personal
+        tbody.innerHTML = "";
+        if (!data.filas || data.filas.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${data.total_dias + 2}" class="text-center text-muted py-3">No hay datos en la matriz para este mes. Haz clic en "Generar Automático Mes".</td></tr>`;
+            return;
+        }
+
+        data.filas.forEach(f => {
+            let rowHtml = `<tr>
+                <td class="fw-bold bg-light">${f.numero_orden}</td>
+                <td class="text-start fw-bold">${f.nombre_completo}</td>`;
+            
+            for (let d = 1; d <= data.total_dias; d++) {
+                const codigo = f.dias[d] || "";
+                let badgeClass = "badge bg-light text-dark border";
+                if (codigo === "VEL") badgeClass = "badge-vel";
+                else if (["SM", "AM"].includes(codigo)) badgeClass = "badge-sm";
+                else if (["ST", "AT"].includes(codigo)) badgeClass = "badge-st";
+                else if (["TN", "ON"].includes(codigo)) badgeClass = "badge-tn";
+                else if (codigo === "DISP") badgeClass = "badge-disp";
+                else if (codigo === "VAC") badgeClass = "badge-vac";
+
+                rowHtml += `<td><span class="${badgeClass} px-1 py-1 d-block">${codigo}</span></td>`;
+            }
+            rowHtml += `</tr>`;
+            tbody.innerHTML += rowHtml;
+        });
+    } catch (e) {
+        console.error("Error cargando matriz:", e);
+    }
+}
+
+async function generarCuadranteAutomatico() {
+    const mes = document.getElementById("selectMes").value;
+    if (!confirm("¿Desea generar automáticamente la programación para todo el mes evaluando el motor de reglas de la FAC?")) return;
+
+    try {
+        const res = await fetch(`${API_URL}/cuadrante/generar?anio=2026&mes=${mes}`, { method: "POST" });
+        const data = await res.json();
+        alert(data.mensaje || "Cuadrante generado con éxito.");
+        cargarMatriz();
+    } catch (e) {
+        console.error("Error:", e);
+        alert("Error al generar el cuadrante.");
+    }
+}
+
 function prepararModalTurno() {
     const select = document.getElementById("selectControlador");
+    if (!select) return;
     select.innerHTML = "";
 
     if (listaControladoresCache.length === 0) {
@@ -130,38 +204,23 @@ function prepararModalTurno() {
         select.appendChild(opt);
     });
 
-    // Poner fecha de hoy por defecto
     document.getElementById("fechaTurno").valueAsDate = new Date();
 }
 
-async function cargarTurnosAsignados() {
+async function eliminarControlador(id) {
+    if (!confirm("¿Está seguro de eliminar este controlador?")) return;
+
     try {
-        const response = await fetch(`${API_URL}/turnos/`);
-        const turnos = await response.json();
-        
-        const tbody = document.querySelector("#tablaTurnos tbody");
-        tbody.innerHTML = "";
-
-        if (turnos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No hay turnos asignados en el cuadrante.</td></tr>`;
-            return;
+        const response = await fetch(`${API_URL}/controladores/${id}`, { method: "DELETE" });
+        if (response.ok) {
+            alert("Controlador eliminado.");
+            cargarControladores();
+            cargarMatriz();
+        } else {
+            alert("Error al eliminar el controlador.");
         }
-
-        turnos.forEach(t => {
-            const ctrl = listaControladoresCache.find(c => c.id === t.controlador_id);
-            const nombreCtrl = ctrl ? `${ctrl.nombres} ${ctrl.apellidos} (CC: ${ctrl.identificacion})` : t.controlador_id;
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${t.fecha}</td>
-                <td><span class="badge bg-primary">${t.turno_codigo}</span></td>
-                <td>${nombreCtrl}</td>
-                <td><span class="badge bg-success">Validado por Motor FAC</span></td>
-            `;
-            tbody.appendChild(tr);
-        });
     } catch (error) {
-        console.error("Error cargando turnos:", error);
+        console.error("Error:", error);
     }
 }
 
