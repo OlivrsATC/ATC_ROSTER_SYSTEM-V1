@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cargarControladores();
     cargarMatriz();
 
-    // Formulario Registro Controlador
+// Formulario Registro Controlador
     const formControlador = document.getElementById("formControlador");
     if (formControlador) {
         formControlador.addEventListener("submit", async (e) => {
@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = {
                 identificacion: document.getElementById("identificacion").value,
+                grado: document.getElementById("grado").value,
+                numero_curso: document.getElementById("numero_curso").value,
                 nombres: document.getElementById("nombres").value,
                 apellidos: document.getElementById("apellidos").value,
                 email: document.getElementById("email").value,
@@ -156,13 +158,13 @@ async function cargarControladores() {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.identificacion}</td>
-                <td class="fw-bold">${c.nombres} ${c.apellidos}</td>
+                <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(Crs ${c.numero_curso || 'N/A'})</small></td>
                 <td>${c.email}</td>
                 <td><span class="badge bg-secondary">${c.rol}</span></td>
                 <td><span class="badge ${badgeAptitud}">${textoAptitud}</span></td>
                 <td><span class="badge ${c.activo ? 'bg-success' : 'bg-danger'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirModalAutonomias('${c.id}', '${c.nombres} ${c.apellidos}')" title="Gestionar Autonomías">
+                    <button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirModalAutonomias('${c.id}', '${c.grado}. ${c.apellidos} ${c.nombres}')" title="Gestionar Autonomías">
                         <i class="fa-solid fa-shield-halved"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarControlador('${c.id}')" title="Eliminar">

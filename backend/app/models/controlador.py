@@ -7,13 +7,15 @@ class Controlador(Base):
 
     id = Column(String, primary_key=True, index=True)
     identificacion = Column(String, unique=True, index=True, nullable=False)
+    grado = Column(String, nullable=False, default="T3")  # AT, T4, T3, T2, T1, TS, TJ
+    numero_curso = Column(String, nullable=True)         # Número de curso (Ej. 088)
     nombres = Column(String, nullable=False)
     apellidos = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    email = Column(String, nullable=False)
     rol = Column(String, default="CONTROLADOR")
-    activo = Column(Boolean, default=True)
     aptitud_psicofisica_vencimiento = Column(Date, nullable=False)
+    activo = Column(Boolean, default=True)
 
-    autonomias = relationship("Autonomia", back_populates="controlador", cascade="all, delete-orphan")
-    novedades = relationship("NovedadPersonal", back_populates="controlador", cascade="all, delete-orphan")
-    turnos_asignados = relationship("TurnoAsignado", back_populates="controlador", cascade="all, delete-orphan")
+    # Relaciones con otras tablas
+    autonomias = relationship("Autonomia", back_populates="controlador", cascade="all, delete")
+    turnos_asignados = relationship("TurnoAsignado", back_populates="controlador", cascade="all, delete")
