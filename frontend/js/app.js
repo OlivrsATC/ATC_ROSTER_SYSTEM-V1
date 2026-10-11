@@ -228,7 +228,7 @@ async function cargarMatriz() {
             for (let d = 1; d <= data.total_dias; d++) {
                 const codigoActual = f.dias[d] || "";
                 
-                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px;" onchange="actualizarCelda('${f.id}', 2026, ${mes}, ${d}, this.value)">`;
+                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', 2026, ${mes}, ${d}, this.value)">`;
                 opcionesTurnos.forEach(opt => {
                     const selected = opt === codigoActual ? "selected" : "";
                     selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
