@@ -1,9 +1,10 @@
 import calendar
-from datetime import date, timedelta
+from datetime import date
 from sqlalchemy.orm import Session
 import uuid
 
 from app.models.controlador import Controlador
+from app.models.autonomia import Autonomia
 from app.models.asignacion import TurnoAsignado
 from app.services.motor_reglas import MotorReglasATC
 
@@ -15,12 +16,17 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
     if not controladores:
         return {"error": "No hay controladores activos."}
 
-    turnos_operativos = ["VEL", "SM", "ST", "TN", "AM", "AT", "CP"]
+    # Mapeo de autonomías institucionales a códigos de turnos permitidos
+    mapa_turnos_autonomia = {
+        "SUP": ["SM", "ST"],
+        "TWR": ["TM", "TT", "TN", "VEL"],
+        "ACC": ["AM", "AT", "ON"],
+    }
 
     for dia in range(1, num_dias + 1):
         fecha_actual = date(anio, mes, dia)
         
-        for idx, ctrl in enumerate(controladores):
+        for ctrl in controladores:
             existente = db.query(TurnoAsignado).filter(
                 TurnoAsignado.controlador_id == ctrl.id,
                 TurnoAsignado.fecha == fecha_actual
@@ -29,16 +35,34 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
             if existente:
                 continue
 
+            # Verificar aptitud psicofísica y novedades (Vacaciones)
             if not motor.validar_aptitud_y_novedades(ctrl.id, fecha_actual):
                 codigo_asignar = "VAC"
             else:
-                candidato = turnos_operativos[(idx + dia) % len(turnos_operativos)]
-                if not motor.verificar_regla_disponible_obligatorio(ctrl.id, fecha_actual, candidato):
-                    codigo_asignar = "DISP"
-                elif candidato.endswith('N') and not motor.validar_limite_noches(ctrl.id, fecha_actual, candidato):
-                    codigo_asignar = "DISP"
+                # Obtener autonomías vigentes del controlador
+                autonomias_ctrl = db.query(Autonomia).filter(Autonomia.controlador_id == ctrl.id).all()
+                tipos_aut = [a.tipo.upper() for a in autonomias_ctrl]
+
+                # Recopilar turnos elegibles según sus autonomías
+                turnos_elegibles = []
+                for t_tipo in tipos_aut:
+                    if t_tipo in mapa_turnos_autonomia:
+                        turnos_elegibles.extend(mapa_turnos_autonomia[t_tipo])
+                
+                # Si no tiene autonomías operativas, asignar Horario Oficina (HU) por defecto
+                if not turnos_elegibles:
+                    codigo_asignar = "HU"
                 else:
-                    codigo_asignar = candidato
+                    # Seleccionar rotativamente de sus turnos permitidos
+                    candidato = turnos_elegibles[(dia + hash(ctrl.id)) % len(turnos_elegibles)]
+
+                    # Aplicar motor de reglas (DISP obligatorio post-tarde/noche y límite de noches)
+                    if not motor.verificar_regla_disponible_obligatorio(ctrl.id, fecha_actual, candidato):
+                        codigo_asignar = "DISP"
+                    elif candidato in ["TN", "ON"] and not motor.validar_limite_noches(ctrl.id, fecha_actual, candidato):
+                        codigo_asignar = "DISP"
+                    else:
+                        codigo_asignar = candidato
 
             db.add(TurnoAsignado(
                 id=str(uuid.uuid4()),
@@ -50,4 +74,4 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
             ))
 
     db.commit()
-    return {"mensaje": f"Cuadrante generado para {anio}-{mes:02d}."}
+    return {"mensaje": f"Cuadrante generado con éxito para {anio}-{mes:02d} basado en autonomías."}

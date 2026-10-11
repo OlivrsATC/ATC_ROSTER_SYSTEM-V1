@@ -45,6 +45,63 @@
                 </div>
             </div>
         </div>
+        <!-- Modal Gestionar Autonomías -->
+        <div class="modal fade" id="modalAutonomias" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-secondary text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-id-card-clip me-2"></i>Gestionar Autonomías - <span id="nombreCtrlModal"></span></h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formAutonomia" class="row g-3 mb-4 p-3 bg-light rounded">
+                            <input type="hidden" id="autCtrlId">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Tipo Autonomía</label>
+                                <select class="form-select form-select-sm" id="autTipo" required>
+                                    <option value="TWR">TWR (Torre)</option>
+                                    <option value="ACC">ACC (Área)</option>
+                                    <option value="SUP">SUP (Supervisor)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Posición / Detalle</label>
+                                <input type="text" class="form-control form-control-sm" id="autPosicion" placeholder="Ej. TORRE DE CONTROL" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">F. Obtención</label>
+                                <input type="date" class="form-control form-control-sm" id="autFechaObt" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">F. Vencimiento</label>
+                                <input type="date" class="form-control form-control-sm" id="autFechaVen" required>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fa-solid fa-plus me-1"></i> Asignar</button>
+                            </div>
+                        </form>
+
+                        <h6 class="fw-bold text-secondary">Autonomías Registradas</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered align-middle" id="tablaAutonomiasModal">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th>Posición</th>
+                                        <th>Obtención</th>
+                                        <th>Vencimiento</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dinámico por JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Matriz Mensual Estilo Excel -->
         <div class="row mb-4">
@@ -68,7 +125,7 @@
                         </div>
                     </div>
                     <div class="table-responsive" style="max-height: 600px;">
-                        <table class="table table-bordered table-excel" id="tablaMatriz">
+                        <table class="table table-bordered table-excel align-middle text-center" id="tablaMatriz">
                             <thead class="table-dark text-center sticky-top" id="headerMatriz">
                                 <!-- Generado dinámicamente por JS -->
                             </thead>
@@ -190,16 +247,17 @@
                         <div class="mb-3">
                             <label class="form-label">Código del Turno (FAC)</label>
                             <select class="form-select" id="selectTurnoCodigo" required>
-                                <option value="TM">TM - Torre Mañana (07:00 - 13:00)</option>
-                                <option value="TT">TT - Torre Tarde (13:00 - 19:00)</option>
-                                <option value="TN">TN - Torre Noche (19:00 - 07:00)</option>
-                                <option value="SM">SM - Supervisor Mañana (07:00 - 13:00)</option>
-                                <option value="ST">ST - Supervisor Tarde (13:00 - 19:00)</option>
-                                <option value="AM">AM - Área Mañana (07:00 - 13:00)</option>
-                                <option value="AT">AT - Área Tarde (13:00 - 19:00)</option>
-                                <option value="HU">HU - Horario Oficina (07:30 - 17:00)</option>
+                                <option value="TM">TM - Torre Mañana</option>
+                                <option value="TT">TT - Torre Tarde</option>
+                                <option value="TN">TN - Torre Noche</option>
+                                <option value="SM">SM - Supervisor Mañana</option>
+                                <option value="ST">ST - Supervisor Tarde</option>
+                                <option value="AM">AM - Área Mañana</option>
+                                <option value="AT">AT - Área Tarde</option>
+                                <option value="HU">HU - Horario Oficina</option>
                                 <option value="VEL">VEL - Velásquez / Vuelo</option>
                                 <option value="DISP">DISP - Disponible 24h</option>
+                                <option value="VAC">VAC - Vacaciones</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -212,7 +270,6 @@
             </div>
         </div>
     </div>
-
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
