@@ -47,7 +47,7 @@
                         
         <!-- Botón para abrir el modal de novedades -->
 <button class="btn btn-outline-info btn-sm me-2" onclick="abrirModalGestionNovedades()">
-    <i class="fa-solid fa-calendar-days me-1"></i> Gestionar Vacaciones y Cursos
+    <i class="fa-solid fa-calendar-days me-1"></i> Gestionar Vacaciones, Cursos y Comisiones
 </button>
 
 
@@ -70,9 +70,14 @@
                         <label class="form-label fw-bold">Tipo / Código en Cuadrante</label>
                         <select class="form-select" id="novTipo" required>
                             <option value="VAC">VAC - Vacaciones</option>
-                            <option value="REEN">REEN - Curso / Reentrenamiento</option>
+                            <option value="REEN">REEN - Reentrenamiento Militar</option>
                             <option value="ENTTO">ENTTO - Entrenamiento</option>
-                            <option value="HU">HU - Huelga / Licencia</option>
+                            <option value="HU">HU - Horario Unidad</option>
+                            <option value="PAT">PAT - Patrulla</option>
+                            <option value="VEL">VEL - Velasquez</option>
+                            <option value="TRN">TURNO - Descanso</option> <-- Agregado para representar un turno de descanso
+
+
                         </select>
                     </div>
                     <div class="col-md-12">
