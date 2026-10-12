@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATC Roster System - CACOM-1</title>
-    <!-- Bootstrap 5 CSS -->
+    <!-- Bootstrap 5 CSS para el diseño responsivo y componentes de la interfaz -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome Icons para la iconografía de los botones y paneles -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <!-- Custom CSS (Estilos personalizados de la aplicación) -->
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Navbar Institucional -->
+    <!-- ================================================================= -->
+    <!-- NAVBAR INSTITUCIONAL SUPERIOR                                     -->
+    <!-- ================================================================= -->
     <nav class="navbar navbar-dark bg-dark shadow-sm py-3">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1 fw-bold">
@@ -23,21 +25,26 @@
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
+    <!-- Contenedor Principal de la Aplicación -->
     <div class="container-fluid my-4">
         
-        <!-- Panel de Control y Acciones -->
+        <!-- ============================================================= -->
+        <!-- PANEL DE CONTROL OPERATIVO (Botones de acción principal)       -->
+        <!-- ============================================================= -->
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card p-3">
                     <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-sliders me-2"></i>Panel de Control Operativo</h5>
                     <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <!-- Botón para abrir modal de registro de nuevo controlador -->
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalControlador">
                             <i class="fa-solid fa-user-plus me-1"></i> Registrar Controlador
                         </button>
+                        <!-- Botón para abrir modal de asignación manual de turnos -->
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTurno" onclick="prepararModalTurno()">
                             <i class="fa-solid fa-calendar-check me-1"></i> Asignar Turno
                         </button>
+                        <!-- Enlace directo a la documentación técnica de FastAPI Swagger -->
                         <a href="http://127.0.0.1:8000/docs" target="_blank" class="btn btn-outline-secondary">
                             <i class="fa-solid fa-book me-1"></i> Documentación API (Swagger)
                         </a>
@@ -45,7 +52,10 @@
                 </div>
             </div>
         </div>
-        <!-- Modal Gestionar Autonomías -->
+
+        <!-- ============================================================= -->
+        <!-- MODAL: GESTIONAR AUTONOMÍAS                                   -->
+        <!-- ============================================================= -->
         <div class="modal fade" id="modalAutonomias" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -54,6 +64,7 @@
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <!-- Formulario para agregar nuevas autonomías -->
                         <form id="formAutonomia" class="row g-3 mb-4 p-3 bg-light rounded">
                             <input type="hidden" id="autCtrlId">
                             <div class="col-md-3">
@@ -65,7 +76,6 @@
                                     <option value="GND">GND (Superficie)</option>
                                     <option value="OIA">OIA (Información Aeronáutica)</option>
                                     <option value="INS">INS (Instructor)</option>
-
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -85,6 +95,7 @@
                             </div>
                         </form>
 
+                        <!-- Tabla listado de autonomías ya registradas del controlador -->
                         <h6 class="fw-bold text-secondary">Autonomías Registradas</h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-bordered align-middle" id="tablaAutonomiasModal">
@@ -98,7 +109,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Dinámico por JS -->
+                                    <!-- Rellenado dinámicamente por JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -107,13 +118,16 @@
             </div>
         </div>
 
-        <!-- Matriz Mensual Estilo Excel -->
+        <!-- ============================================================= -->
+        <!-- CUADRANTE MENSUAL OPERATIVO (Matriz Estilo Excel)             -->
+        <!-- ============================================================= -->
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card p-3 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold text-primary"><i class="fa-solid fa-table-cells me-2"></i>Cuadrante Mensual Operativo (FAC)</h5>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Selector de Mes a evaluar -->
                             <select id="selectMes" class="form-select form-select-sm" onchange="cargarMatriz()">
                                 <option value="9" selected>Septiembre 2026</option>
                                 <option value="10">Octubre 2026</option>
@@ -122,16 +136,17 @@
                             </select>
                             
                             <div class="d-flex align-items-center gap-2">
-                                <!-- Botón Deshacer -->
+                                <!-- Botón para deshacer/limpiar la programación automática del mes -->
                                 <button class="btn btn-outline-danger" onclick="deshacerCuadranteAutomatico()">
                                     <i class="fa-solid fa-rotate-left me-1"></i>Deshacer
                                 </button>
                                 
-                                <!-- Botón Generación Automática -->
+                                <!-- Botón para activar el generador automático de turnos -->
                                 <button class="btn btn-primary" onclick="generarCuadranteAutomatico()">
                                     <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generar Automático Mes
                                 </button>
                             </div>
+                            <!-- Botón de actualización manual de la matriz -->
                             <button class="btn btn-outline-secondary btn-sm" onclick="cargarMatriz()">
                                 <i class="fa-solid fa-rotate me-1"></i> Actualizar
                             </button>
@@ -140,10 +155,10 @@
                     <div class="table-responsive" style="max-height: 600px;">
                         <table class="table table-bordered table-excel align-middle text-center" id="tablaMatriz">
                             <thead class="table-dark text-center sticky-top" id="headerMatriz">
-                                <!-- Generado dinámicamente por JS -->
+                                <!-- Generado dinámicamente por JavaScript -->
                             </thead>
                             <tbody id="bodyMatriz">
-                                <!-- Generado dinámicamente por JS -->
+                                <!-- Generado dinámicamente por JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -151,42 +166,48 @@
             </div>
         </div>
 
-       <!-- Sección Generación de Orden de Servicio (PDF Oficial) -->
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="fa-solid fa-file-pdf me-2"></i>Generación de Orden de Servicio PDF</h5>
-    </div>
-    <div class="card-body">
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Fecha Inicio</label>
-                <input type="date" class="form-control" id="pdfFechaInicio" required>
+        <!-- ============================================================= -->
+        <!-- SECCIÓN: GENERACIÓN DE ORDEN DE SERVICIO PDF (Oficial)         -->
+        <!-- ============================================================= -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-file-pdf me-2"></i>Generación de Orden de Servicio PDF</h5>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Fecha Fin</label>
-                <input type="date" class="form-control" id="pdfFechaFin" required>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" class="form-control" id="pdfFechaInicio" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" class="form-control" id="pdfFechaFin" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Técnico Asesor Servicios a la Navegación Aérea</label>
+                        <input type="text" class="form-control" id="asesorNav" value="Nombre Asesor Navegación Aérea" placeholder="Grado y Nombre">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Comandante GRUCO-11</label>
+                        <input type="text" class="form-control" id="cmdGruco" value="Nombre Comandante GRUCO-11" placeholder="Grado y Nombre">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Comandante ESNAV-115</label>
+                        <input type="text" class="form-control" id="cmdEsnav" value="Nombre Comandante ESNAV-115" placeholder="Grado y Nombre">
+                    </div>
+                </div>
+                <!-- Botón de descarga del reporte en formato PDF horizontal -->
+                <button class="btn btn-danger w-100" id="btnDescargarPdf">
+                    <i class="fa-solid fa-download me-2"></i>Descargar Orden de Servicio PDF
+                </button>
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label class="form-label">Técnico Asesor Servicios a la Navegación Aérea</label>
-                <input type="text" class="form-control" id="asesorNav" value="Nombre Asesor Navegación Aérea" placeholder="Grado y Nombre">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Comandante GRUCO-11</label>
-                <input type="text" class="form-control" id="cmdGruco" value="Nombre Comandante GRUCO-11" placeholder="Grado y Nombre">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Comandante ESNAV-115</label>
-                <input type="text" class="form-control" id="cmdEsnav" value="Nombre Comandante ESNAV-115" placeholder="Grado y Nombre">
-            </div>
-        </div>
-        <button class="btn btn-danger w-100" id="btnDescargarPdf">
-            <i class="fa-solid fa-download me-2"></i>Descargar Orden de Servicio PDF
-        </button>
-    </div>
-</div>
-        <!-- Tabla de Personal Registrado -->
+
+        <!-- ============================================================= -->
+        <!-- TABLA: PERSONAL REGISTRADO Y ESTADO                           -->
+        <!-- ============================================================= -->
         <div class="row">
             <div class="col-md-12">
                 <div class="card p-3">
@@ -205,7 +226,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Generado por JS -->
+                                <!-- Rellenado dinámicamente por JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -215,7 +236,9 @@
 
     </div>
 
-    <!-- Modal Registrar Controlador -->
+    <!-- ================================================================= -->
+    <!-- MODAL: REGISTRAR NUEVO CONTROLADOR                                -->
+    <!-- ================================================================= -->
     <div class="modal fade" id="modalControlador" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -270,7 +293,9 @@
         </div>
     </div>
 
-    <!-- Modal Asignar Turno Individual -->
+    <!-- ================================================================= -->
+    <!-- MODAL: ASIGNAR TURNO OPERATIVO INDIVIDUAL                         -->
+    <!-- ================================================================= -->
     <div class="modal fade" id="modalTurno" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -283,7 +308,7 @@
                         <div class="mb-3">
                             <label class="form-label">Seleccionar Controlador</label>
                             <select class="form-select" id="selectControlador" required>
-                                <!-- Dinámico por JS -->
+                                <!-- Rellenado dinámicamente por JavaScript -->
                             </select>
                         </div>
                         <div class="mb-3">
@@ -312,9 +337,42 @@
             </div>
         </div>
     </div>
-    <!-- Bootstrap JS Bundle -->
+
+    <!-- ================================================================= -->
+    <!-- [NUEVO] MODAL: EDITAR APTITUD PSICOFÍSICA                         -->
+    <!-- ================================================================= -->
+    <div class="modal fade" id="modalEditarAptitud" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-heart-pulse me-2"></i>Actualizar Aptitud Psicofísica</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditarAptitud">
+                        <input type="hidden" id="editCtrlId">
+                        <div class="mb-3 text-center">
+                            <span class="fw-bold text-primary" id="labelNombreCtrlApt"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAptitudFecha" class="form-label small fw-bold">Nueva Fecha de Vencimiento</label>
+                            <input type="date" class="form-control" id="editAptitudFecha" required>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-save me-1"></i>Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SCRIPTS JAVASCRIPT DE BOOTSTRAP Y LÓGICA PRINCIPAL                -->
+    <!-- ================================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
+    <!-- Archivo JS principal de la aplicación -->
     <script src="js/app.js"></script>
 </body>
 </html>

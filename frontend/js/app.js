@@ -1,10 +1,6 @@
-/**
- * ============================================================================
- * CONFIGURACIÓN GLOBAL Y VARIABLES DE ESTADO
- * ============================================================================
- */
+
 const API_URL = "http://127.0.0.1:8000/api";
-let listaControladoresCache = []; // Almacena la lista de controladores en memoria para evitar múltiples peticiones
+let listaControladoresCache = []; // Almacena la lista de controladores en memoria para evitar múltiples peticiones innecesarias
 let controladorSeleccionadoId = null; // ID del controlador seleccionado actualmente para gestionar sus autonomías
 
 /**
@@ -146,6 +142,42 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    /**
+     * [NUEVA CARACTERÍSTICA] Formulario para Actualizar la Aptitud Psicofísica
+     */
+    const formEditarAptitud = document.getElementById("formEditarAptitud");
+    if (formEditarAptitud) {
+        formEditarAptitud.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const ctrlId = document.getElementById("editCtrlId").value;
+            const nuevaFecha = document.getElementById("editAptitudFecha").value;
+
+            try {
+                // Petición PUT al backend para actualizar la fecha médica del controlador
+                const res = await fetch(`${API_URL}/controladores/${ctrlId}/aptitud`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ aptitud_psicofisica_vencimiento: nuevaFecha })
+                });
+
+                if (res.ok) {
+                    alert("¡Aptitud psicofísica actualizada con éxito!");
+                    // Cierra el modal flotante
+                    bootstrap.Modal.getInstance(document.getElementById("modalEditarAptitud")).hide();
+                    // Recarga las tablas para reflejar los nuevos colores de alerta en tiempo real
+                    cargarControladores();
+                    cargarMatriz();
+                } else {
+                    const err = await res.json();
+                    alert(`Error: ${err.detail}`);
+                }
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("No se pudo conectar con el servidor para actualizar la aptitud.");
+            }
+        });
+    }
 });
 
 /**
@@ -170,7 +202,6 @@ async function cargarControladores() {
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
-        listaControladoresCache.forceEach = listaControladoresCache.forEach;
         listaControladoresCache.forEach(c => {
             // Cálculo de días restantes para el vencimiento de la aptitud psicofísica
             const fechaVen = new Date(c.aptitud_psicofisica_vencimiento + 'T00:00:00');
@@ -181,7 +212,7 @@ async function cargarControladores() {
             let styleAptitud = "";
             let textoAptitud = `${c.aptitud_psicofisica_vencimiento} (${diffDays} días)`;
 
-            // Lógica de alertas visuales de aptitud psicofísica
+            // Lógica de alertas visuales de aptitud psicofísica según rangos requeridos
             if (diffDays < 0) {
                 // Vencido (Negro / Oscuro)
                 badgeAptitud = "bg-dark";
@@ -191,13 +222,13 @@ async function cargarControladores() {
                 badgeAptitud = "bg-danger text-white fw-bold";
                 textoAptitud = `${c.aptitud_psicofisica_vencimiento} (¡Vence en ${diffDays} días!)`;
             } else if (diffDays <= 30) {
-                // Entre 15 y 30 días: Alerta naranja
+                // Entre 15 y 30 días: Alerta naranja de advertencia
                 badgeAptitud = "";
                 styleAptitud = "background-color: #fd7e14; color: white; font-weight: bold;";
                 textoAptitud = `${c.aptitud_psicofisica_vencimiento} (¡Vence en ${diffDays} días!)`;
             }
 
-            // Construcción de la fila de la tabla de controladores
+            // Construcción de la fila de la tabla de controladores con el botón de edición médica añadido
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.identificacion}</td>
@@ -207,6 +238,9 @@ async function cargarControladores() {
                 <td><span class="badge ${badgeAptitud}" style="${styleAptitud}">${textoAptitud}</span></td>
                 <td><span class="badge ${c.activo ? 'bg-success' : 'bg-danger'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalEditarAptitud('${c.id}', '${c.grado}. ${c.apellidos} ${c.nombres}', '${c.aptitud_psicofisica_vencimiento}')" title="Actualizar Aptitud Psicofísica">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
                     <button class="btn btn-sm btn-outline-secondary me-1" onclick="abrirModalAutonomias('${c.id}', '${c.grado}. ${c.apellidos} ${c.nombres}')" title="Gestionar Autonomías">
                         <i class="fa-solid fa-shield-halved"></i>
                     </button>
@@ -233,7 +267,7 @@ async function cargarMatriz() {
     const mes = mesSelect.value;
 
     try {
-        // Petición al backend para obtener la matriz y festivos del mes seleccionado
+        // Petición al backend para obtener la matriz, festivos y fines de semana del mes seleccionado
         const res = await fetch(`${API_URL}/cuadrante/matriz?anio=2026&mes=${mes}`);
         const data = await res.json();
 
@@ -262,7 +296,7 @@ async function cargarMatriz() {
             return;
         }
 
-        // Lista de turnos disponibles en el menú desplegable de cada celda
+        // Lista completa de turnos disponibles en el menú desplegable de cada celda
         const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN","AM","AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VAC", "HU", "ENTTO", "REEN", "PAT", "INS"];
 
         // Rellenar las filas de los controladores y sus celdas de turnos diarios
@@ -370,7 +404,7 @@ async function generarCuadranteAutomatico() {
 
 /**
  * ============================================================================
- * GESTIÓN DE AUTONOMÍAS Y MODALES
+ * GESTIÓN DE AUTONOMÍAS Y MODALES DE CONTROLADORES
  * ============================================================================
  */
 async function abrirModalAutonomias(ctrlId, nombreCompleto) {
@@ -430,6 +464,18 @@ async function eliminarAutonomia(autId) {
     } catch (e) {
         console.error("Error:", e);
     }
+}
+
+/**
+ * [NUEVA CARACTERÍSTICA] Abre el modal para editar la fecha de aptitud psicofísica
+ */
+function abrirModalEditarAptitud(ctrlId, nombreCompleto, fechaActual) {
+    document.getElementById("editCtrlId").value = ctrlId;
+    document.getElementById("labelNombreCtrlApt").textContent = `Controlador: ${nombreCompleto}`;
+    document.getElementById("editAptitudFecha").value = fechaActual;
+
+    const modal = new bootstrap.Modal(document.getElementById("modalEditarAptitud"));
+    modal.show();
 }
 
 function prepararModalTurno() {
