@@ -164,7 +164,7 @@ async function cargarControladores() {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.identificacion}</td>
-                <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(Crs ${c.numero_curso || 'N/A'})</small></td>
+                <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(${c.numero_curso || 'N/A'})</small></td>
                 <td>${c.email}</td>
                 <td><span class="badge bg-secondary">${c.rol}</span></td>
                 <td><span class="badge ${badgeAptitud}">${textoAptitud}</span></td>
@@ -218,7 +218,7 @@ async function cargarMatriz() {
             return;
         }
 
-        const opcionesTurnos = ["", "SM", "ST", "TN", "AM", "AT", "ON", "VEL", "CP", "DISP", "VAC", "HU", "REEN", "PAT", "INS"];
+        const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN", "AM", "AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VAC", "HU","ENTTO", "REEN", "PAT", "INS"];
 
         data.filas.forEach(f => {
             let rowHtml = `<tr>
