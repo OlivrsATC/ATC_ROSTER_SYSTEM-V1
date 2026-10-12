@@ -1,7 +1,11 @@
-
+/**
+ * ============================================================================
+ * CONFIGURACIÓN GLOBAL Y VARIABLES DE ESTADO
+ * ============================================================================
+ */
 const API_URL = "http://127.0.0.1:8000/api";
-let listaControladoresCache = []; // Almacena la lista de controladores en memoria para evitar múltiples peticiones innecesarias
-let controladorSeleccionadoId = null; // ID del controlador seleccionado actualmente para gestionar sus autonomías
+let listaControladoresCache = []; 
+let controladorSeleccionadoId = null; 
 
 /**
  * ============================================================================
@@ -9,7 +13,10 @@ let controladorSeleccionadoId = null; // ID del controlador seleccionado actualm
  * ============================================================================
  */
 document.addEventListener("DOMContentLoaded", () => {
-    // Carga inicial de las tablas de controladores y el cuadrante mensual al abrir la página
+    // 1. Poblar el selector de meses con un rango de 10 años y preseleccionar el actual
+    poblarSelectMeses();
+
+    // 2. Carga inicial de las tablas de controladores y el cuadrante mensual
     cargarControladores();
     cargarMatriz();
 
@@ -19,15 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
         btnDescargarPdf.addEventListener("click", descargarPDFOrdenServicio);
     }
 
-    /**
-     * Formulario de Registro de Nuevo Controlador
-     */
+    // Formulario de Registro de Nuevo Controlador
     const formControlador = document.getElementById("formControlador");
     if (formControlador) {
         formControlador.addEventListener("submit", async (e) => {
-            e.preventDefault(); // Evita que la página se recargue al enviar el formulario
+            e.preventDefault();
 
-            // Recopilación de los datos ingresados en el formulario de registro
             const data = {
                 identificacion: document.getElementById("identificacion").value,
                 grado: document.getElementById("grado").value,
@@ -42,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             try {
-                // Envío de la petición POST al backend para registrar al controlador
                 const response = await fetch(`${API_URL}/controladores/`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -56,10 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 alert("Controlador registrado exitosamente.");
-                formControlador.reset(); // Limpia el formulario
-                // Cierra el modal de Bootstrap correspondiente
+                formControlador.reset();
                 bootstrap.Modal.getInstance(document.getElementById("modalControlador")).hide();
-                // Recarga las tablas para reflejar el nuevo registro
                 cargarControladores();
                 cargarMatriz();
             } catch (error) {
@@ -69,9 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /**
-     * Formulario de Asignación Individual de Turno
-     */
+    // Formulario de Asignación Individual de Turno
     const formTurno = document.getElementById("formTurno");
     if (formTurno) {
         formTurno.addEventListener("submit", async (e) => {
@@ -107,9 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /**
-     * Formulario para Asignar una Autonomía a un Controlador
-     */
+    // Formulario para Asignar una Autonomía a un Controlador
     const formAutonomia = document.getElementById("formAutonomia");
     if (formAutonomia) {
         formAutonomia.addEventListener("submit", async (e) => {
@@ -143,9 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /**
-     * [NUEVA CARACTERÍSTICA] Formulario para Actualizar la Aptitud Psicofísica
-     */
+    // Formulario para Actualizar la Aptitud Psicofísica
     const formEditarAptitud = document.getElementById("formEditarAptitud");
     if (formEditarAptitud) {
         formEditarAptitud.addEventListener("submit", async (e) => {
@@ -154,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const nuevaFecha = document.getElementById("editAptitudFecha").value;
 
             try {
-                // Petición PUT al backend para actualizar la fecha médica del controlador
                 const res = await fetch(`${API_URL}/controladores/${ctrlId}/aptitud`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -163,9 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (res.ok) {
                     alert("¡Aptitud psicofísica actualizada con éxito!");
-                    // Cierra el modal flotante
                     bootstrap.Modal.getInstance(document.getElementById("modalEditarAptitud")).hide();
-                    // Recarga las tablas para reflejar los nuevos colores de alerta en tiempo real
                     cargarControladores();
                     cargarMatriz();
                 } else {
@@ -179,6 +171,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+/**
+ * ============================================================================
+ * [NUEVA FUNCIÓN] POBLAR SELECTOR DE MESES (10 AÑOS Y MES ACTUAL)
+ * ============================================================================
+ */
+function poblarSelectMeses() {
+    const select = document.getElementById("selectMes");
+    if (!select) return;
+    select.innerHTML = "";
+
+    const fechaActual = new Date();
+    const anioActual = fechaActual.getFullYear();
+    const mesActual = fechaActual.getMonth() + 1; // 1 (Enero) a 12 (Diciembre)
+
+    const nombresMeses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    // Rango de 10 años a partir del año actual (ej. 2026 hasta 2035)
+    for (let anio = anioActual; anio <= anioActual + 10; anio++) {
+        for (let m = 1; m <= 12; m++) {
+            const option = document.createElement("option");
+            option.value = `${anio}-${m}`;
+            option.textContent = `${nombresMeses[m - 1]} ${anio}`;
+
+            // Preselecciona automáticamente el mes y año actual del sistema
+            if (anio === anioActual && m === mesActual) {
+                option.selected = true;
+            }
+
+            select.appendChild(option);
+        }
+    }
+}
 
 /**
  * ============================================================================
@@ -203,32 +231,26 @@ async function cargarControladores() {
         hoy.setHours(0, 0, 0, 0);
 
         listaControladoresCache.forEach(c => {
-            // Cálculo de días restantes para el vencimiento de la aptitud psicofísica
             const fechaVen = new Date(c.aptitud_psicofisica_vencimiento + 'T00:00:00');
             const diffTime = fechaVen - hoy;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            let badgeAptitud = "bg-success"; // Verde por defecto (más de 30 días)
+            let badgeAptitud = "bg-success"; 
             let styleAptitud = "";
             let textoAptitud = `${c.aptitud_psicofisica_vencimiento} (${diffDays} días)`;
 
-            // Lógica de alertas visuales de aptitud psicofísica según rangos requeridos
             if (diffDays < 0) {
-                // Vencido (Negro / Oscuro)
                 badgeAptitud = "bg-dark";
                 textoAptitud = `${c.aptitud_psicofisica_vencimiento} (VENCIDO hace ${Math.abs(diffDays)} días)`;
             } else if (diffDays < 15) {
-                // Menos de 15 días: Alerta roja crítica
                 badgeAptitud = "bg-danger text-white fw-bold";
                 textoAptitud = `${c.aptitud_psicofisica_vencimiento} (¡Vence en ${diffDays} días!)`;
             } else if (diffDays <= 30) {
-                // Entre 15 y 30 días: Alerta naranja de advertencia
                 badgeAptitud = "";
                 styleAptitud = "background-color: #fd7e14; color: white; font-weight: bold;";
                 textoAptitud = `${c.aptitud_psicofisica_vencimiento} (¡Vence en ${diffDays} días!)`;
             }
 
-            // Construcción de la fila de la tabla de controladores con el botón de edición médica añadido
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.identificacion}</td>
@@ -262,19 +284,19 @@ async function cargarControladores() {
  * ============================================================================
  */
 async function cargarMatriz() {
-    const mesSelect = document.getElementById("selectMes");
-    if (!mesSelect) return;
-    const mes = mesSelect.value;
+    const selectMes = document.getElementById("selectMes");
+    if (!selectMes) return;
+    
+    // Extraer año y mes seleccionados dinámicamente del select (formato: "YYYY-M")
+    const [anio, mes] = selectMes.value.split("-");
 
     try {
-        // Petición al backend para obtener la matriz, festivos y fines de semana del mes seleccionado
-        const res = await fetch(`${API_URL}/cuadrante/matriz?anio=2026&mes=${mes}`);
+        const res = await fetch(`${API_URL}/cuadrante/matriz?anio=${anio}&mes=${mes}`);
         const data = await res.json();
 
         const thead = document.getElementById("headerMatriz");
         const tbody = document.getElementById("bodyMatriz");
 
-        // Construcción de la cabecera con días y letras de la semana (resaltando fines de semana/festivos)
         let headerHtml = `<tr><th rowspan="2" class="align-middle">#</th><th rowspan="2" class="align-middle text-start">CONTROLADOR</th>`;
         data.dias_info.forEach(d => {
             const bgHeader = d.es_especial ? "bg-warning bg-opacity-25" : "";
@@ -296,10 +318,8 @@ async function cargarMatriz() {
             return;
         }
 
-        // Lista completa de turnos disponibles en el menú desplegable de cada celda
         const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN","AM","AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VAC", "HU", "ENTTO", "REEN", "PAT", "INS"];
 
-        // Rellenar las filas de los controladores y sus celdas de turnos diarios
         data.filas.forEach(f => {
             let rowHtml = `<tr>
                 <td class="fw-bold bg-light">${f.numero_orden}</td>
@@ -308,15 +328,13 @@ async function cargarMatriz() {
             data.dias_info.forEach(d => {
                 const codigoActual = f.dias[d.dia] || "";
                 
-                // Creación del elemento select sin bordes ni flechas visuales para mantener limpio el diseño
-                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', 2026, ${mes}, ${d.dia}, this.value)">`;
+                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
                 opcionesTurnos.forEach(opt => {
                     const selected = opt === codigoActual ? "selected" : "";
                     selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
                 });
                 selectHtml += `</select>`;
 
-                // Asignación de colores de fondo según el tipo de turno o si es día especial (fin de semana/festivo)
                 let bgClass = d.es_especial ? "bg-warning bg-opacity-10" : "bg-white";
                 if (codigoActual === "VEL") bgClass = "bg-warning bg-opacity-25";
                 else if (["SM", "AM"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
@@ -339,11 +357,13 @@ async function cargarMatriz() {
  * Función para limpiar/deshacer toda la programación automática del mes en curso
  */
 async function deshacerCuadranteAutomatico() {
-    const mes = document.getElementById("selectMes").value;
-    if (!confirm(`¿Está seguro de deshacer y borrar toda la programación asignada para el mes ${mes} de 2026?`)) return;
+    const selectMes = document.getElementById("selectMes");
+    const [anio, mes] = selectMes.value.split("-");
+
+    if (!confirm(`¿Está seguro de deshacer y borrar toda la programación asignada para este periodo?`)) return;
 
     try {
-        const res = await fetch(`${API_URL}/cuadrante/limpiar?anio=2026&mes=${mes}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/cuadrante/limpiar?anio=${anio}&mes=${mes}`, { method: "DELETE" });
         const data = await res.json();
         alert(data.mensaje || "Se ha limpiado la programación del mes con éxito.");
         cargarMatriz();
@@ -388,11 +408,13 @@ async function actualizarCelda(controladorId, anio, mes, dia, nuevoCodigo) {
  * Ejecuta el generador automático de turnos del mes evaluando el motor de reglas
  */
 async function generarCuadranteAutomatico() {
-    const mes = document.getElementById("selectMes").value;
+    const selectMes = document.getElementById("selectMes");
+    const [anio, mes] = selectMes.value.split("-");
+
     if (!confirm("¿Desea generar automáticamente la programación para todo el mes evaluando el motor de reglas de la FAC?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/cuadrante/generar?anio=2026&mes=${mes}`, { method: "POST" });
+        const res = await fetch(`${API_URL}/cuadrante/generar?anio=${anio}&mes=${mes}`, { method: "POST" });
         const data = await res.json();
         alert(data.mensaje || "Cuadrante generado con éxito.");
         cargarMatriz();
@@ -466,9 +488,6 @@ async function eliminarAutonomia(autId) {
     }
 }
 
-/**
- * [NUEVA CARACTERÍSTICA] Abre el modal para editar la fecha de aptitud psicofísica
- */
 function abrirModalEditarAptitud(ctrlId, nombreCompleto, fechaActual) {
     document.getElementById("editCtrlId").value = ctrlId;
     document.getElementById("labelNombreCtrlApt").textContent = `Controlador: ${nombreCompleto}`;

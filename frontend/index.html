@@ -127,14 +127,11 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold text-primary"><i class="fa-solid fa-table-cells me-2"></i>Cuadrante Mensual Operativo (FAC)</h5>
                         <div class="d-flex gap-2 align-items-center">
-                            <!-- Selector de Mes a evaluar -->
-                            <select id="selectMes" class="form-select form-select-sm" onchange="cargarMatriz()">
-                                <option value="9" selected>Septiembre 2026</option>
-                                <option value="10">Octubre 2026</option>
-                                <option value="11">Noviembre 2026</option>
-                                <option value="12">Diciembre 2026</option>
-                            </select>
-                            
+                            <!-- Selector de Mes y Año Dinámico (10 Años) -->
+                                <select id="selectMes" class="form-select form-select-sm" onchange="cargarMatriz()">
+                                    <!-- Generado dinámicamente por JavaScript -->
+                                </select>
+                                                            
                             <div class="d-flex align-items-center gap-2">
                                 <!-- Botón para deshacer/limpiar la programación automática del mes -->
                                 <button class="btn btn-outline-danger" onclick="deshacerCuadranteAutomatico()">
