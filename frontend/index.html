@@ -116,9 +116,18 @@
                                 <option value="11">Noviembre 2026</option>
                                 <option value="12">Diciembre 2026</option>
                             </select>
-                            <button class="btn btn-primary btn-sm" onclick="generarCuadranteAutomatico()">
-                                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generar Automático Mes
-                            </button>
+                            
+                            <div class="d-flex align-items-center gap-2">
+                                <!-- Botón Deshacer -->
+                                <button class="btn btn-outline-danger" onclick="deshacerCuadranteAutomatico()">
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Deshacer
+                                </button>
+                                
+                                <!-- Botón Generación Automática -->
+                                <button class="btn btn-primary" onclick="generarCuadranteAutomatico()">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generar Automático Mes
+                                </button>
+                            </div>
                             <button class="btn btn-outline-secondary btn-sm" onclick="cargarMatriz()">
                                 <i class="fa-solid fa-rotate me-1"></i> Actualizar
                             </button>

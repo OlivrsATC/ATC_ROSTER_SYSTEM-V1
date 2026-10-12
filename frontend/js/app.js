@@ -198,17 +198,17 @@ async function cargarMatriz() {
         const tbody = document.getElementById("bodyMatriz");
 
         let headerHtml = `<tr><th rowspan="2" class="align-middle">#</th><th rowspan="2" class="align-middle text-start">CONTROLADOR</th>`;
-        for (let d = 1; d <= data.total_dias; d++) {
-            headerHtml += `<th>${d}</th>`;
-        }
+        data.dias_info.forEach(d => {
+            const bgHeader = d.es_especial ? "bg-warning bg-opacity-25" : "";
+            headerHtml += `<th class="${bgHeader}">${d.dia}</th>`;
+        });
         headerHtml += `</tr>`;
 
         headerHtml += `<tr>`;
-        if (data.dias_semana) {
-            data.dias_semana.forEach(ds => {
-                headerHtml += `<th class="bg-secondary text-white small" style="font-size: 0.7rem;">${ds}</th>`;
-            });
-        }
+        data.dias_info.forEach(d => {
+            const bgSub = d.es_especial ? "bg-warning bg-opacity-25 text-dark" : "bg-secondary text-white";
+            headerHtml += `<th class="${bgSub} small" style="font-size: 0.7rem;">${d.letra}</th>`;
+        });
         headerHtml += `</tr>`;
         thead.innerHTML = headerHtml;
 
@@ -225,17 +225,18 @@ async function cargarMatriz() {
                 <td class="fw-bold bg-light">${f.numero_orden}</td>
                 <td class="text-start fw-bold text-nowrap">${f.nombre_completo}</td>`;
             
-            for (let d = 1; d <= data.total_dias; d++) {
-                const codigoActual = f.dias[d] || "";
+            data.dias_info.forEach(d => {
+                const codigoActual = f.dias[d.dia] || "";
                 
-                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', 2026, ${mes}, ${d}, this.value)">`;
+                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', 2026, ${mes}, ${d.dia}, this.value)">`;
                 opcionesTurnos.forEach(opt => {
                     const selected = opt === codigoActual ? "selected" : "";
                     selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
                 });
                 selectHtml += `</select>`;
 
-                let bgClass = "bg-white";
+                // Prioridad de colores de turnos o color tenue de fin de semana/festivo
+                let bgClass = d.es_especial ? "bg-warning bg-opacity-10" : "bg-white";
                 if (codigoActual === "VEL") bgClass = "bg-warning bg-opacity-25";
                 else if (["SM", "AM"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
                 else if (["ST", "AT"].includes(codigoActual)) bgClass = "bg-info bg-opacity-25";
@@ -244,7 +245,7 @@ async function cargarMatriz() {
                 else if (codigoActual === "VAC") bgClass = "bg-secondary bg-opacity-25";
 
                 rowHtml += `<td class="${bgClass} p-0">${selectHtml}</td>`;
-            }
+            });
             rowHtml += `</tr>`;
             tbody.innerHTML += rowHtml;
         });
@@ -253,6 +254,20 @@ async function cargarMatriz() {
     }
 }
 
+async function deshacerCuadranteAutomatico() {
+    const mes = document.getElementById("selectMes").value;
+    if (!confirm(`¿Está seguro de deshacer y borrar toda la programación asignada para el mes ${mes} de 2026?`)) return;
+
+    try {
+        const res = await fetch(`${API_URL}/cuadrante/limpiar?anio=2026&mes=${mes}`, { method: "DELETE" });
+        const data = await res.json();
+        alert(data.mensaje || "Se ha limpiado la programación del mes con éxito.");
+        cargarMatriz();
+    } catch (e) {
+        console.error("Error:", e);
+        alert("Error al conectar con el servidor para deshacer la programación.");
+    }
+}
 async function actualizarCelda(controladorId, anio, mes, dia, nuevoCodigo) {
     const fechaStr = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
     
