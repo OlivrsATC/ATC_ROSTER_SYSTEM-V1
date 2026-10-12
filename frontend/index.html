@@ -44,6 +44,76 @@
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTurno" onclick="prepararModalTurno()">
                             <i class="fa-solid fa-calendar-check me-1"></i> Asignar Turno
                         </button>
+                        
+        <!-- Botón para abrir el modal de novedades -->
+<button class="btn btn-outline-info btn-sm me-2" onclick="abrirModalGestionNovedades()">
+    <i class="fa-solid fa-calendar-days me-1"></i> Gestionar Vacaciones y Cursos
+</button>
+
+
+<!-- Modal Gestión de Novedades Programadas -->
+<div class="modal fade" id="modalGestionNovedades" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="fa-solid fa-calendar-plus me-2"></i>Vacaciones y Cursos Programados</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de Registro -->
+                <form id="formNovedadProgramada" class="row g-3 mb-4 p-3 border rounded bg-light">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Controlador</label>
+                        <select class="form-select" id="novSelectControlador" required></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tipo / Código en Cuadrante</label>
+                        <select class="form-select" id="novTipo" required>
+                            <option value="VAC">VAC - Vacaciones</option>
+                            <option value="REEN">REEN - Curso / Reentrenamiento</option>
+                            <option value="ENTTO">ENTTO - Entrenamiento</option>
+                            <option value="HU">HU - Huelga / Licencia</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Asunto / Descripción</label>
+                        <input type="text" class="form-control" id="novAsunto" placeholder="Ej. Vacaciones anuales reglamentarias / Curso de repaso" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Fecha Inicial</label>
+                        <input type="date" class="form-control" id="novFechaInicio" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Fecha Final</label>
+                        <input type="date" class="form-control" id="novFechaFin" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-save me-1"></i> Guardar Novedad Programada</button>
+                    </div>
+                </form>
+
+                <!-- Tabla de Novedades Registradas -->
+                <h6 class="fw-bold">Listado de Programaciones Anteladas</h6>
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table table-sm table-bordered table-striped align-middle" id="tablaNovedadesRegistradas">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Controlador</th>
+                                <th>Tipo</th>
+                                <th>Asunto</th>
+                                <th>Desde</th>
+                                <th>Hasta</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
                         <!-- Enlace directo a la documentación técnica de FastAPI Swagger -->
                         <a href="http://127.0.0.1:8000/docs" target="_blank" class="btn btn-outline-secondary">
                             <i class="fa-solid fa-book me-1"></i> Documentación API (Swagger)
@@ -205,7 +275,7 @@
                 </button>
             </div>
         </div>
-
+        
         <!-- ============================================================= -->
         <!-- TABLA: PERSONAL REGISTRADO Y ESTADO                           -->
         <!-- ============================================================= -->

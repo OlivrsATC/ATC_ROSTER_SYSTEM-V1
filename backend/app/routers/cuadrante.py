@@ -8,6 +8,7 @@ import uuid
 from app.database import get_db
 from app.models.controlador import Controlador
 from app.models.asignacion import TurnoAsignado
+from app.models.novedad import NovedadProgramada
 from app.services.generador_automatico import generar_cuadrante_mes
 from app.services.motor_reglas import MotorReglasATC
 from pydantic import BaseModel
@@ -52,19 +53,38 @@ def obtener_matriz_mensual(anio: int = Query(2026), mes: int = Query(9), db: Ses
     for idx, ctrl in enumerate(controladores, start=1):
         # Formato militar: Grado, Apellidos, Nombres y Número de Curso
         curso_str = f" - {ctrl.numero_curso}" if ctrl.numero_curso else ""
+        
+        # Obtener las novedades programadas con antelación para este controlador
+        novedades_ctrl = db.query(NovedadProgramada).filter(
+            NovedadProgramada.controlador_id == ctrl.id
+        ).all()
+
         fila = {
             "id": ctrl.id,
             "numero_orden": idx,
             "nombre_completo": f"{ctrl.grado}. {ctrl.apellidos} {ctrl.nombres}{curso_str}".upper(),
             "dias": {}
         }
+        
         for dia in range(1, num_dias + 1):
             f_dia = date(anio, mes, dia)
-            asig = db.query(TurnoAsignado).filter(
-                TurnoAsignado.controlador_id == ctrl.id,
-                TurnoAsignado.fecha == f_dia
-            ).first()
-            fila["dias"][dia] = asig.turno_codigo if asig else ""
+            
+            # Verificar si la fecha cae dentro de una novedad programada (Vacaciones, Cursos, etc.)
+            codigo_novedad = ""
+            for nov in novedades_ctrl:
+                if nov.fecha_inicio <= f_dia <= nov.fecha_fin:
+                    codigo_novedad = nov.tipo
+                    break
+            
+            if codigo_novedad:
+                fila["dias"][dia] = codigo_novedad
+            else:
+                asig = db.query(TurnoAsignado).filter(
+                    TurnoAsignado.controlador_id == ctrl.id,
+                    TurnoAsignado.fecha == f_dia
+                ).first()
+                fila["dias"][dia] = asig.turno_codigo if asig else ""
+                
         matriz.append(fila)
 
     # Obtener los días de la semana y verificar si son fines de semana o festivos

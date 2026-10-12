@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routers import controlador, cuadrante, turno, autonomia, reporte
+from app.routers import controlador, cuadrante, turno, autonomia, reporte, novedades
 
 # Crear las tablas en la base de datos si no existen
 Base.metadata.create_all(bind=engine)
@@ -28,6 +28,7 @@ app.include_router(cuadrante.router)
 app.include_router(turno.router)
 app.include_router(autonomia.router)
 app.include_router(reporte.router)
+app.include_router(novedades.router)
 
 @app.get("/")
 def read_root():

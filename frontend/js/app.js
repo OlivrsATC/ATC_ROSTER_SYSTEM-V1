@@ -689,3 +689,104 @@ function toggleFullScreenMatriz() {
         contenedorTabla.style.maxHeight = "600px";
     }
 }
+
+async function abrirModalGestionNovedades() {
+    // Poblar el selector de controladores en el modal
+    const select = document.getElementById("novSelectControlador");
+    select.innerHTML = "";
+    listaControladoresCache.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.grado} ${c.apellidos} ${c.nombres}`;
+        select.appendChild(opt);
+    });
+
+    await cargarTablaNovedadesModal();
+    const modal = new bootstrap.Modal(document.getElementById("modalGestionNovedades"));
+    modal.show();
+}
+
+async function cargarTablaNovedadesModal() {
+    try {
+        const res = await fetch(`${API_URL}/novedades/`);
+        const novedades = await res.json();
+        const tbody = document.querySelector("#tablaNovedadesRegistradas tbody");
+        tbody.innerHTML = "";
+
+        if (novedades.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay novedades programadas con antelación.</td></tr>`;
+            return;
+        }
+
+        novedades.forEach(n => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td class="fw-bold">${n.controlador_nombre}</td>
+                <td><span class="badge bg-primary">${n.tipo}</span></td>
+                <td>${n.asunto}</td>
+                <td>${n.fecha_inicio}</td>
+                <td>${n.fecha_fin}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarNovedad('${n.id}')" title="Eliminar">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("Error cargando novedades:", e);
+    }
+}
+
+async function eliminarNovedad(id) {
+    if (!confirm("¿Está seguro de eliminar esta programación antelada?")) return;
+    try {
+        const res = await fetch(`${API_URL}/novedades/${id}`, { method: "DELETE" });
+        if (res.ok) {
+            cargarTablaNovedadesModal();
+            cargarMatriz(); // Refresca el cuadrante inmediatamente
+        }
+    } catch (e) {
+        console.error("Error:", e);
+    }
+}
+
+// Vincular el formulario dentro del DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+    // ... tus otras inicializaciones ...
+
+    const formNovedad = document.getElementById("formNovedadProgramada");
+    if (formNovedad) {
+        formNovedad.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                controlador_id: document.getElementById("novSelectControlador").value,
+                tipo: document.getElementById("novTipo").value,
+                asunto: document.getElementById("novAsunto").value,
+                fecha_inicio: document.getElementById("novFechaInicio").value,
+                fecha_fin: document.getElementById("novFechaFin").value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/novedades/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert("¡Novedad programada registrada con éxito y aplicada al cuadrante!");
+                    formNovedad.reset();
+                    cargarTablaNovedadesModal();
+                    cargarMatriz(); // Actualiza el cuadrante al instante
+                } else {
+                    const err = await res.json();
+                    alert(`Error: ${err.detail}`);
+                }
+            } catch (error) {
+                console.error("Error de conexión:", error);
+            }
+        });
+    }
+});
