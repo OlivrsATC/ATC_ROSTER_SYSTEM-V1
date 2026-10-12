@@ -36,6 +36,16 @@ class ReordenarRequest(BaseModel):
     """Esquema para validar la lista de IDs al actualizar el orden por drag and drop."""
     controladores_ids: List[str]
 
+class ControladorUpdate(BaseModel):
+    """Esquema para validar la actualización de datos generales del controlador."""
+    identificacion: Optional[str] = None
+    grado: Optional[str] = None
+    numero_curso: Optional[str] = None
+    nombres: Optional[str] = None
+    apellidos: Optional[str] = None
+    email: Optional[str] = None
+    rol: Optional[str] = None
+    activo: Optional[bool] = None
 
 # ============================================================================
 # ENDPOINTS / RUTAS DE CONTROLADORES
@@ -119,6 +129,40 @@ def actualizar_aptitud_psicofisica(controlador_id: str, data: ActualizarAptitudR
     ctrl.aptitud_psicofisica_vencimiento = data.aptitud_psicofisica_vencimiento
     db.commit()
     return {"mensaje": "Fecha de aptitud psicofísica actualizada con éxito."}
+
+@router.put("/{controlador_id}")
+def actualizar_controlador(controlador_id: str, data: ControladorUpdate, db: Session = Depends(get_db)):
+    """
+    Actualiza la información general de un controlador existente.
+    """
+    ctrl = db.query(Controlador).filter(Controlador.id == controlador_id).first()
+    if not ctrl:
+        raise HTTPException(status_code=404, detail="Controlador no encontrado.")
+    
+    # Validar si se está cambiando la identificación y si ya existe en otro registro
+    if data.identificacion and data.identificacion != ctrl.identificacion:
+        existing = db.query(Controlador).filter(Controlador.identificacion == data.identificacion).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe otro controlador con esta identificación.")
+        ctrl.identificacion = data.identificacion
+
+    if data.grado is not None:
+        ctrl.grado = data.grado
+    if data.numero_curso is not None:
+        ctrl.numero_curso = data.numero_curso
+    if data.nombres is not None:
+        ctrl.nombres = data.nombres
+    if data.apellidos is not None:
+        ctrl.apellidos = data.apellidos
+    if data.email is not None:
+        ctrl.email = data.email
+    if data.rol is not None:
+        ctrl.rol = data.rol
+    if data.activo is not None:
+        ctrl.activo = data.activo
+
+    db.commit()
+    return {"mensaje": "Datos del controlador actualizados con éxito."}
 
 @router.delete("/{controlador_id}")
 def eliminar_controlador(controlador_id: str, db: Session = Depends(get_db)):

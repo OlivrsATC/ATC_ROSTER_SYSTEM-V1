@@ -368,6 +368,65 @@
             </div>
         </div>
     </div>
+    <!-- Modal Editar Datos del Controlador -->
+<div class="modal fade" id="modalEditarControlador" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formEditarControlador">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-user-pen me-2"></i>Editar Controlador</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editGenCtrlId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Cédula / Identificación</label>
+                        <input type="text" class="form-control" id="editGenIdentificacion" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Grado</label>
+                            <input type="text" class="form-control" id="editGenGrado" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">N° Curso</label>
+                            <input type="text" class="form-control" id="editGenNumeroCurso">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombres</label>
+                        <input type="text" class="form-control" id="editGenNombres" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Apellidos</label>
+                        <input type="text" class="form-control" id="editGenApellidos" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="editGenEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rol</label>
+                        <select class="form-select" id="editGenRol">
+                            <option value="CONTROLADOR">CONTROLADOR</option>
+                            <option value="SUPERVISOR">SUPERVISOR</option>
+                            <option value="JEFE_ESCUADRON">JEFE_ESCUADRON</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="editGenActivo">
+                        <label class="form-check-label fw-bold" for="editGenActivo">Activo en servicio</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
     <!-- ================================================================= -->
     <!-- SCRIPTS JAVASCRIPT DE BOOTSTRAP Y LÓGICA PRINCIPAL                -->

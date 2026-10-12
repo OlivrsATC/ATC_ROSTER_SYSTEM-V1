@@ -171,6 +171,47 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // Formulario para Editar Datos Generales del Controlador
+    const formEditarControlador = document.getElementById("formEditarControlador");
+    if (formEditarControlador) {
+        formEditarControlador.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const ctrlId = document.getElementById("editGenCtrlId").value;
+
+            const data = {
+                identificacion: document.getElementById("editGenIdentificacion").value,
+                grado: document.getElementById("editGenGrado").value,
+                numero_curso: document.getElementById("editGenNumeroCurso").value,
+                nombres: document.getElementById("editGenNombres").value,
+                apellidos: document.getElementById("editGenApellidos").value,
+                email: document.getElementById("editGenEmail").value,
+                rol: document.getElementById("editGenRol").value,
+                activo: document.getElementById("editGenActivo").checked
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/controladores/${ctrlId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert("¡Datos del controlador actualizados con éxito!");
+                    bootstrap.Modal.getInstance(document.getElementById("modalEditarControlador")).hide();
+                    cargarControladores();
+                    cargarMatriz();
+                } else {
+                    const err = await res.json();
+                    alert(`Error: ${err.detail}`);
+                }
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("No se pudo conectar con el servidor para actualizar los datos.");
+            }
+        });
+    }
 });
 
 /**
@@ -265,6 +306,9 @@ async function cargarControladores() {
                 <td><span class="badge ${badgeAptitud}" style="${styleAptitud}">${textoAptitud}</span></td>
                 <td><span class="badge ${c.activo ? 'bg-success' : 'bg-danger'}">${c.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-outline-warning me-1" onclick='abrirModalEditarControlador(${JSON.stringify(c)})' title="Editar Datos Generales">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </button>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirModalEditarAptitud('${c.id}', '${c.grado}. ${c.apellidos} ${c.nombres}', '${c.aptitud_psicofisica_vencimiento}')" title="Actualizar Aptitud Psicofísica">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
@@ -381,7 +425,6 @@ async function cargarMatriz() {
             data.dias_info.forEach(d => {
                 const codigoActual = f.dias[d.dia] || "";
                 
-                // min-width: 24px para que todos los días entren en pantalla sin desplazamiento horizontal
                 let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.65rem; width: 100%; min-width: 24px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
                 opcionesTurnos.forEach(opt => {
                     const selected = opt === codigoActual ? "selected" : "";
@@ -548,6 +591,21 @@ function abrirModalEditarAptitud(ctrlId, nombreCompleto, fechaActual) {
     document.getElementById("editAptitudFecha").value = fechaActual;
 
     const modal = new bootstrap.Modal(document.getElementById("modalEditarAptitud"));
+    modal.show();
+}
+
+function abrirModalEditarControlador(c) {
+    document.getElementById("editGenCtrlId").value = c.id;
+    document.getElementById("editGenIdentificacion").value = c.identificacion;
+    document.getElementById("editGenGrado").value = c.grado;
+    document.getElementById("editGenNumeroCurso").value = c.numero_curso || "";
+    document.getElementById("editGenNombres").value = c.nombres;
+    document.getElementById("editGenApellidos").value = c.apellidos;
+    document.getElementById("editGenEmail").value = c.email;
+    document.getElementById("editGenRol").value = c.rol;
+    document.getElementById("editGenActivo").checked = c.activo;
+
+    const modal = new bootstrap.Modal(document.getElementById("modalEditarControlador"));
     modal.show();
 }
 
