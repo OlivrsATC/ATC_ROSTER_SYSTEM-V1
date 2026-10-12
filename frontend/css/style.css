@@ -21,6 +21,28 @@ body {
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
+/* Estilos para el modo Full Screen de la Matriz Cuadrante */
+.card-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 99999 !important;
+    background-color: #ffffff !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+}
+
+/* Expande el contenedor de la tabla en pantalla completa */
+.card-fullscreen .table-responsive {
+    max-height: calc(100vh - 120px) !important;
+    height: calc(100vh - 120px) !important;
+}
+
 .table-matrix th, .table-matrix td {
   text-align: center;
   vertical-align: middle;

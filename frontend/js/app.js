@@ -254,7 +254,7 @@ async function cargarControladores() {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${c.identificacion}</td>
-                <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(Crs ${c.numero_curso || 'N/A'})</small></td>
+                <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(${c.numero_curso || 'N/A'})</small></td>
                 <td>${c.email}</td>
                 <td><span class="badge bg-secondary">${c.rol}</span></td>
                 <td><span class="badge ${badgeAptitud}" style="${styleAptitud}">${textoAptitud}</span></td>
@@ -553,4 +553,32 @@ function descargarPDFOrdenServicio() {
 
     const url = `${API_URL}/reportes/orden-servicio?fecha_inicio=${fInicio}&fecha_fin=${fFin}&asesor_nav=${asesor}&comandante_gruco=${gruco}&comandante_esnav=${esnav}`;
     window.open(url, "_blank");
+}
+
+/**
+ * ============================================================================
+ * [NUEVA CARACTERÍSTICA] PANTALLA COMPLETA PARA EL CUADRANTE
+ * ============================================================================
+ */
+function toggleFullScreenMatriz() {
+    const card = document.getElementById("cardCuadrante");
+    const contenedorTabla = document.getElementById("contenedorTablaMatriz");
+    const icono = document.getElementById("iconoFullScreen");
+    
+    // Alterna la clase CSS de pantalla completa en la tarjeta
+    card.classList.toggle("card-fullscreen");
+    
+    if (card.classList.contains("card-fullscreen")) {
+        // Cambiar ícono a "comprimir / salir de pantalla completa"
+        icono.classList.remove("fa-expand");
+        icono.classList.add("fa-compress");
+        // Ajustar altura máxima de la tabla al 100% de la ventana
+        contenedorTabla.style.maxHeight = "calc(100vh - 130px)";
+    } else {
+        // Restaurar ícono original de "expandir"
+        icono.classList.remove("fa-compress");
+        icono.classList.add("fa-expand");
+        // Restaurar altura estándar por defecto
+        contenedorTabla.style.maxHeight = "600px";
+    }
 }
