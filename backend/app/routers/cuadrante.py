@@ -46,7 +46,7 @@ def es_festivo_colombia(f: date) -> bool:
 @router.get("/matriz")
 def obtener_matriz_mensual(anio: int = Query(2026), mes: int = Query(9), db: Session = Depends(get_db)):
     num_dias = calendar.monthrange(anio, mes)[1]
-    controladores = db.query(Controlador).all()
+    controladores = db.query(Controlador).order_by(Controlador.orden.asc()).all()
     matriz = []
     
     for idx, ctrl in enumerate(controladores, start=1):

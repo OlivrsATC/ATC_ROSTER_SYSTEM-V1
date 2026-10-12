@@ -6,6 +6,7 @@
 const API_URL = "http://127.0.0.1:8000/api";
 let listaControladoresCache = []; 
 let controladorSeleccionadoId = null; 
+let filaArrastrada = null; // Variable de estado para el Drag and Drop
 
 /**
  * ============================================================================
@@ -174,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /**
  * ============================================================================
- * [NUEVA FUNCIÓN] POBLAR SELECTOR DE MESES (10 AÑOS Y MES ACTUAL)
+ * POBLAR SELECTOR DE MESES (10 AÑOS Y MES ACTUAL)
  * ============================================================================
  */
 function poblarSelectMeses() {
@@ -191,7 +192,7 @@ function poblarSelectMeses() {
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
     ];
 
-    // Rango de 10 años a partir del año actual (ej. 2026 hasta 2035)
+    // Rango de 10 años a partir del año actual (ej. 2026 hasta 2036)
     for (let anio = anioActual; anio <= anioActual + 10; anio++) {
         for (let m = 1; m <= 12; m++) {
             const option = document.createElement("option");
@@ -210,7 +211,7 @@ function poblarSelectMeses() {
 
 /**
  * ============================================================================
- * FUNCIONES DE GESTIÓN Y RENDERIZADO DE CONTROLADORES
+ * FUNCIONES DE GESTIÓN, RENDERIZADO Y DRAG & DROP DE CONTROLADORES
  * ============================================================================
  */
 async function cargarControladores() {
@@ -252,8 +253,12 @@ async function cargarControladores() {
             }
 
             const tr = document.createElement("tr");
+            tr.setAttribute("draggable", "true"); // Habilita el arrastre de filas
+            tr.dataset.id = c.id; // Asocia el ID único del controlador
+            tr.style.cursor = "grab"; // Cursor de agarre
+
             tr.innerHTML = `
-                <td>${c.identificacion}</td>
+                <td><i class="fa-solid fa-grip-vertical text-muted me-1"></i>${c.identificacion}</td>
                 <td class="fw-bold"><span class="badge bg-dark me-1">${c.grado}</span> ${c.apellidos} ${c.nombres} <small class="text-muted">(${c.numero_curso || 'N/A'})</small></td>
                 <td>${c.email}</td>
                 <td><span class="badge bg-secondary">${c.rol}</span></td>
@@ -271,6 +276,55 @@ async function cargarControladores() {
                     </button>
                 </td>
             `;
+
+            // --- EVENTOS DRAG AND DROP ---
+            tr.addEventListener("dragstart", (e) => {
+                filaArrastrada = tr;
+                e.dataTransfer.effectAllowed = "move";
+                setTimeout(() => tr.classList.add("opacity-50"), 0);
+            });
+
+            tr.addEventListener("dragend", () => {
+                filaArrastrada = null;
+                tbody.querySelectorAll("tr").forEach(t => t.classList.remove("opacity-50"));
+            });
+
+            tr.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                const targetTr = e.target.closest("tr");
+                if (targetTr && targetTr !== filaArrastrada) {
+                    const rect = targetTr.getBoundingClientRect();
+                    const midpoint = rect.top + rect.height / 2;
+                    if (e.clientY < midpoint) {
+                        tbody.insertBefore(filaArrastrada, targetTr);
+                    } else {
+                        tbody.insertBefore(filaArrastrada, targetTr.nextSibling);
+                    }
+                }
+            });
+
+            tr.addEventListener("drop", async (e) => {
+                e.preventDefault();
+                const nuevasIds = Array.from(tbody.querySelectorAll("tr")).map(row => row.dataset.id);
+
+                try {
+                    const res = await fetch(`${API_URL}/controladores/ordenar`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ controladores_ids: nuevasIds })
+                    });
+
+                    if (res.ok) {
+                        cargarMatriz(); // Refresca la matriz con el nuevo orden guardado
+                    } else {
+                        alert("No se pudo guardar el nuevo orden.");
+                    }
+                } catch (error) {
+                    console.error("Error al reordenar:", error);
+                }
+            });
+
             tbody.appendChild(tr);
         });
     } catch (error) {
@@ -287,7 +341,6 @@ async function cargarMatriz() {
     const selectMes = document.getElementById("selectMes");
     if (!selectMes) return;
     
-    // Extraer año y mes seleccionados dinámicamente del select (formato: "YYYY-M")
     const [anio, mes] = selectMes.value.split("-");
 
     try {
@@ -328,7 +381,8 @@ async function cargarMatriz() {
             data.dias_info.forEach(d => {
                 const codigoActual = f.dias[d.dia] || "";
                 
-                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.75rem; min-width: 45px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
+                // min-width: 24px para que todos los días entren en pantalla sin desplazamiento horizontal
+                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.65rem; width: 100%; min-width: 24px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
                 opcionesTurnos.forEach(opt => {
                     const selected = opt === codigoActual ? "selected" : "";
                     selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
@@ -557,7 +611,7 @@ function descargarPDFOrdenServicio() {
 
 /**
  * ============================================================================
- * [NUEVA CARACTERÍSTICA] PANTALLA COMPLETA PARA EL CUADRANTE
+ * PANTALLA COMPLETA PARA EL CUADRANTE
  * ============================================================================
  */
 function toggleFullScreenMatriz() {
@@ -565,20 +619,15 @@ function toggleFullScreenMatriz() {
     const contenedorTabla = document.getElementById("contenedorTablaMatriz");
     const icono = document.getElementById("iconoFullScreen");
     
-    // Alterna la clase CSS de pantalla completa en la tarjeta
     card.classList.toggle("card-fullscreen");
     
     if (card.classList.contains("card-fullscreen")) {
-        // Cambiar ícono a "comprimir / salir de pantalla completa"
         icono.classList.remove("fa-expand");
         icono.classList.add("fa-compress");
-        // Ajustar altura máxima de la tabla al 100% de la ventana
         contenedorTabla.style.maxHeight = "calc(100vh - 130px)";
     } else {
-        // Restaurar ícono original de "expandir"
         icono.classList.remove("fa-compress");
         icono.classList.add("fa-expand");
-        // Restaurar altura estándar por defecto
         contenedorTabla.style.maxHeight = "600px";
     }
 }

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Date
+from sqlalchemy import Column, String, Boolean, Date, Integer
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -15,6 +15,7 @@ class Controlador(Base):
     rol = Column(String, default="CONTROLADOR")
     aptitud_psicofisica_vencimiento = Column(Date, nullable=False)
     activo = Column(Boolean, default=True)
+    orden = Column(Integer, default=0) # <--- Campo clave para fijar la posición
 
     # Relaciones con otras tablas
     autonomias = relationship("Autonomia", back_populates="controlador", cascade="all, delete")
