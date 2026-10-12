@@ -18,9 +18,12 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
 
     # Mapeo de autonomías institucionales a códigos de turnos permitidos
     mapa_turnos_autonomia = {
-        "SUP": ["SM", "ST"],
-        "TWR": ["TM", "TT", "TN", "VEL"],
-        "ACC": ["AM", "AT", "ON"],
+        "SUP": ["SM", "ST","SD" ],
+        "TWR": ["TM", "TT", "TN", "TD"],
+        "ACC": ["AM", "AT", "AD"],
+        "GND": ["GM", "GT", "GD"],
+        "OIA": ["OM", "OT", "OD", "ON"],
+        "INS": ["IM", "IT"]
     }
 
     for dia in range(1, num_dias + 1):
