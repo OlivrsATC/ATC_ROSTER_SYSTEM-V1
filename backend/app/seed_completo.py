@@ -20,11 +20,11 @@ def seed_squadron():
 
     # 2. Añadir turnos adicionales de la matriz institucional
     turnos_extra = [
-        {"id": "VEL", "codigo": "VEL", "nombre": "Vuelo / Operativo / Velásquez", "tipo_servicio": "Operativo", "hora_inicio": datetime.time(7, 0), "hora_fin": datetime.time(13, 0), "peso_equity": 2},
-        {"id": "CP", "codigo": "CP", "nombre": "Control Principal", "tipo_servicio": "Operativo", "hora_inicio": datetime.time(7, 0), "hora_fin": datetime.time(13, 0), "peso_equity": 3},
+        {"id": "VEL", "codigo": "VEL", "nombre": "Velásquez", "tipo_servicio": "Operativo", "hora_inicio": datetime.time(7, 0), "hora_fin": datetime.time(13, 0), "peso_equity": 2},
+        {"id": "CP", "codigo": "CP", "nombre": "Compensatorio", "tipo_servicio": "Operativo", "hora_inicio": datetime.time(7, 0), "hora_fin": datetime.time(13, 0), "peso_equity": 3},
         {"id": "VAC", "codigo": "VAC", "nombre": "Vacaciones", "tipo_servicio": "Novedad", "hora_inicio": None, "hora_fin": None, "peso_equity": 0},
-        {"id": "REEN", "codigo": "REEN", "nombre": "Reentrenamiento / Militar", "tipo_servicio": "Instruccion", "hora_inicio": datetime.time(7, 30), "hora_fin": datetime.time(12, 0), "peso_equity": 1},
-        {"id": "PAT", "codigo": "PAT", "nombre": "Patrulla / Guardia", "tipo_servicio": "Seguridad", "hora_inicio": datetime.time(6, 0), "hora_fin": datetime.time(18, 0), "peso_equity": 2},
+        {"id": "REEN", "codigo": "REEN", "nombre": "Reentrenamiento Militar", "tipo_servicio": "Instruccion", "hora_inicio": datetime.time(7, 30), "hora_fin": datetime.time(12, 0), "peso_equity": 1},
+        {"id": "PAT", "codigo": "PAT", "nombre": "Patrulla", "tipo_servicio": "Seguridad", "hora_inicio": datetime.time(6, 0), "hora_fin": datetime.time(18, 0), "peso_equity": 2},
         {"id": "INS", "codigo": "INS", "nombre": "Instrucción", "tipo_servicio": "Instruccion", "hora_inicio": datetime.time(8, 0), "hora_fin": datetime.time(12, 0), "peso_equity": 1},
     ]
 

@@ -22,10 +22,20 @@ except ImportError:
 # Diccionario de mapeo de turnos a Cargos y Horarios Oficiales - agregar conforme a solicitud
 CONFIG_TURNOS = {
     "SM": {"cargo": "SUPERVISOR MAÑANA", "horario": "07:00 - 13:00"},
+    "SD": {"cargo": "SUPERVISOR DIA", "horario": "07:00 - 07:00"},
     "ST": {"cargo": "SUPERVISOR TARDE", "horario": "13:00 - 07:00"},
+    "TM": {"cargo": "TORRE MAÑANA", "horario": "07:00 - 13:00"},
+    "TT": {"cargo": "TORRE TARDE", "horario": "13:00 - 19:00"},
+    "TD": {"cargo": "TORRE DIA", "horario": "07:00 - 19:00"},
     "TN": {"cargo": "TORRE NOCHE", "horario": "19:00 - 07:00"},
     "AM": {"cargo": "AREA MAÑANA", "horario": "07:00 - 13:00"},
     "AT": {"cargo": "AREA TARDE", "horario": "13:00 - 19:00"},
+    "AD": {"cargo": "AREA DIA", "horario": "07:00 - 19:00"},
+   "GM": {"cargo": "SUPERFICIE MAÑANA", "horario": "07:00 - 13:00"},
+    "GT": {"cargo": "SUPERFICIE TARDE", "horario": "13:00 - 19:00"},
+    "GD": {"cargo": "SUPERFICIE DIA", "horario": "07:00 - 19:00"},
+    "OM": {"cargo": "OIA MAÑANA", "horario": "07:00 - 19:00"},
+    "OT": {"cargo": "OIA TARDE", "horario": "13:00 - 19:00"},
     "ON": {"cargo": "TORRE NOCHE", "horario": "19:00 - 07:00"},
     "DISP": {"cargo": "DISPONIBLE", "horario": "07:00 - 07:00"},
     "VAC": {"cargo": "VACACIONES", "horario": "N/A"},
@@ -80,7 +90,7 @@ def generar_orden_servicio_pdf(
         ctrl = db.query(Controlador).filter(Controlador.id == asig.controlador_id).first()
         if not ctrl:
             continue
-            
+                
         # Formato de fecha con día de la semana en mayúsculas
         dia_sem = dias_es[asig.fecha.weekday()]
         str_fecha = f"{dia_sem}<br/>{asig.fecha.strftime('%d/%m/%Y')}"
