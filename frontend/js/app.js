@@ -218,7 +218,7 @@ async function cargarMatriz() {
             return;
         }
 
-        const opcionesTurnos = ["", "SM", "ST", "TN", "AM", "AT", "ON", "VEL", "CP", "DISP", "VAC", "HU", "REEN", "PAT", "INS"];
+        const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN","AM","AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VAC", "HU", "ENTTO", "REEN", "PAT", "INS"];
 
         data.filas.forEach(f => {
             let rowHtml = `<tr>
