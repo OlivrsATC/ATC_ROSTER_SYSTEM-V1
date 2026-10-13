@@ -381,6 +381,11 @@ async function cargarControladores() {
  * FUNCIONES DEL CUADRANTE MENSUAL Y MATRIZ OPERATIVA
  * ============================================================================
  */
+/**
+ * ============================================================================
+ * FUNCIONES DEL CUADRANTE MENSUAL Y MATRIZ OPERATIVA (CON MERGE DE CELDA)
+ * ============================================================================
+ */
 async function cargarMatriz() {
     const selectMes = document.getElementById("selectMes");
     if (!selectMes) return;
@@ -422,15 +427,27 @@ async function cargarMatriz() {
                 <td class="fw-bold bg-light">${f.numero_orden}</td>
                 <td class="text-start fw-bold text-nowrap">${f.nombre_completo}</td>`;
             
-            data.dias_info.forEach(d => {
+            // --- Bucle con lógica de Merge (Colspan) para días consecutivos iguales ---
+            let i = 0;
+            while (i < data.dias_info.length) {
+                const d = data.dias_info[i];
                 const codigoActual = f.dias[d.dia] || "";
                 
-                let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.65rem; width: 100%; min-width: 24px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
-                opcionesTurnos.forEach(opt => {
-                    const selected = opt === codigoActual ? "selected" : "";
-                    selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
-                });
-                selectHtml += `</select>`;
+                // Contar cuántos días consecutivos tienen exactamente el mismo código (ej. VAC o REEN)
+                let spanCount = 1;
+                if (codigoActual !== "") {
+                    let j = i + 1;
+                    while (j < data.dias_info.length) {
+                        const nextDia = data.dias_info[j].dia;
+                        const nextCodigo = f.dias[nextDia] || "";
+                        if (nextCodigo === codigoActual) {
+                            spanCount++;
+                            j++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
 
                 let bgClass = d.es_especial ? "bg-warning bg-opacity-10" : "bg-white";
                 if (codigoActual === "VEL") bgClass = "bg-warning bg-opacity-25";
@@ -438,10 +455,27 @@ async function cargarMatriz() {
                 else if (["ST", "AT"].includes(codigoActual)) bgClass = "bg-info bg-opacity-25";
                 else if (["TN", "ON"].includes(codigoActual)) bgClass = "bg-danger bg-opacity-25";
                 else if (codigoActual === "DISP") bgClass = "bg-success bg-opacity-25";
-                else if (codigoActual === "VAC") bgClass = "bg-secondary bg-opacity-25";
+                else if (["VAC", "REEN", "ENTTO", "HU"].includes(codigoActual)) bgClass = "bg-secondary bg-opacity-25 text-dark fw-bold";
 
-                rowHtml += `<td class="${bgClass} p-0">${selectHtml}</td>`;
-            });
+                if (codigoActual === "" || spanCount === 1) {
+                    // Celda individual normal con selector de turno
+                    let selectHtml = `<select class="form-select form-select-sm border-0 bg-transparent text-center fw-bold p-0 shadow-none" style="font-size: 0.65rem; width: 100%; min-width: 24px; appearance: none; -webkit-appearance: none; background-image: none;" onchange="actualizarCelda('${f.id}', ${anio}, ${mes}, ${d.dia}, this.value)">`;
+                    opcionesTurnos.forEach(opt => {
+                        const selected = opt === codigoActual ? "selected" : "";
+                        selectHtml += `<option value="${opt}" ${selected}>${opt || '-'}</option>`;
+                    });
+                    selectHtml += `</select>`;
+
+                    rowHtml += `<td class="${bgClass} p-0">${selectHtml}</td>`;
+                    i++;
+                } else {
+                    // Celda combinada (Merge / colspan) para bloques continuos de vacaciones, cursos o comisiones
+                    let cellContent = `<span class="fw-bold" style="font-size: 0.7rem;">${codigoActual}</span>`;
+                    rowHtml += `<td class="${bgClass} text-center align-middle p-1" colspan="${spanCount}">${cellContent}</td>`;
+                    i += spanCount; // Salta los días que ya fueron fusionados en esta celda
+                }
+            }
+
             rowHtml += `</tr>`;
             tbody.innerHTML += rowHtml;
         });
@@ -449,7 +483,6 @@ async function cargarMatriz() {
         console.error("Error cargando matriz:", e);
     }
 }
-
 /**
  * Función para limpiar/deshacer toda la programación automática del mes en curso
  */
