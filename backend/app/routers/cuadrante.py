@@ -153,6 +153,54 @@ def actualizar_celda_cuadrante(data: ActualizarCeldaRequest, db: Session = Depen
 def generar(anio: int = Query(2026), mes: int = Query(9), db: Session = Depends(get_db)):
     return generar_cuadrante_mes(db, anio, mes)
 
+@router.post("/celda")
+def actualizar_celda_cuadrante(data: ActualizarCeldaRequest, db: Session = Depends(get_db)):
+    """Actualiza o asigna el turno de una celda evaluando reglas, fatiga y autonomías."""
+    motor = MotorReglasATC(db)
+    codigo = data.turno_codigo.upper().strip()
+
+    if codigo:
+        # Regla 5: Validar si cuenta con la autonomía para la posición elegida manualmente
+        if not motor.validar_autonomia(data.controlador_id, codigo, data.fecha):
+            raise HTTPException(
+                status_code=400, 
+                detail="⚠️ Alerta: El controlador seleccionado no cuenta con la autonomía requerida para esta posición."
+            )
+
+        # Regla 1 & General: Validar aptitud psicofísica y nocturnos consecutivos
+        if codigo != "VAC" and not motor.validar_aptitud_y_novedades(data.controlador_id, data.fecha):
+            raise HTTPException(status_code=400, detail="Aptitud psicofísica vencida o novedad activa en la fecha.")
+
+        if not motor.validar_nocturnos_consecutivos(data.controlador_id, data.fecha, codigo):
+            raise HTTPException(status_code=400, detail="⚠️ Restricción operativa: Excede el límite de turnos nocturnos consecutivos permitidos.")
+
+    # Buscar si ya existe asignación en esa fecha
+    asig = db.query(TurnoAsignado).filter(
+        TurnoAsignado.controlador_id == data.controlador_id,
+        TurnoAsignado.fecha == data.fecha
+    ).first()
+
+    if asig:
+        if codigo == "":
+            db.delete(asig)
+        else:
+            asig.turno_codigo = codigo
+            asig.modificado_manualmente = True
+    else:
+        if codigo != "":
+            nuevo = TurnoAsignado(
+                id=str(uuid.uuid4()),
+                controlador_id=data.controlador_id,
+                turno_codigo=codigo,
+                fecha=data.fecha,
+                asignado_automaticamente=False,
+                modificado_manualmente=True
+            )
+            db.add(nuevo)
+
+    db.commit()
+    return {"mensaje": "Celda actualizada con éxito."}
+
 @router.delete("/limpiar")
 def deshacer_cuadrante_mes(anio: int = Query(2026), mes: int = Query(9), db: Session = Depends(get_db)):
     """Borra todos los turnos asignados en el mes y año especificados (Deshacer)"""

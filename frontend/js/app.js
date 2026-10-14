@@ -420,7 +420,7 @@ async function cargarMatriz() {
             return;
         }
 
-        const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN","AM","AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VAC", "HU", "ENTTO", "REEN", "PAT", "INS"];
+        const opcionesTurnos = ["", "SM", "ST", "SD","TM","TT","TD","TN","AM","AT","AD","GM","GT","GD","OM","OT","OD","ON", "VEL", "CP", "DISP", "VACACIONES", "HU", "ENTTO", "REEN", "PAT", "INS"];
 
         data.filas.forEach(f => {
             let rowHtml = `<tr>
@@ -448,14 +448,17 @@ async function cargarMatriz() {
                         }
                     }
                 }
-
+                //Colores celdas
                 let bgClass = d.es_especial ? "bg-warning bg-opacity-10" : "bg-white";
                 if (codigoActual === "VEL") bgClass = "bg-warning bg-opacity-25";
-                else if (["SM", "AM"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
+                else if (["SM"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
+                else if (["AM"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
+                else if (["SD"].includes(codigoActual)) bgClass = "bg-primary bg-opacity-25";
+
                 else if (["ST", "AT"].includes(codigoActual)) bgClass = "bg-info bg-opacity-25";
                 else if (["TN", "ON"].includes(codigoActual)) bgClass = "bg-danger bg-opacity-25";
                 else if (codigoActual === "DISP") bgClass = "bg-success bg-opacity-25";
-                else if (["VAC", "REEN", "ENTTO", "HU"].includes(codigoActual)) bgClass = "bg-secondary bg-opacity-25 text-dark fw-bold";
+                else if (["VACACIONES", "REEN", "ENTTO", "HU"].includes(codigoActual)) bgClass = "bg-secondary bg-opacity-25 text-dark fw-bold";
 
                 if (codigoActual === "" || spanCount === 1) {
                     // Celda individual normal con selector de turno

@@ -1,80 +1,92 @@
-from datetime import date, timedelta
 from sqlalchemy.orm import Session
+from datetime import date, timedelta
 from app.models.asignacion import TurnoAsignado
 from app.models.controlador import Controlador
+from app.models.autonomia import Autonomia
+from app.models.novedad import NovedadProgramada
 
 class MotorReglasATC:
     def __init__(self, db: Session):
         self.db = db
 
-    def validar_aptitud_y_novedades(self, controlador_id: str, fecha_turno: date) -> bool:
-        """Verifica si el controlador tiene novedades activas o aptitud psicofísica vencida en la fecha."""
-        controlador = self.db.query(Controlador).filter(Controlador.id == controlador_id).first()
-        if not controlador or not controlador.activo:
-            return False
-
-        # Validación de aptitud psicofísica
-        if controlador.aptitud_psicofisica_vencimiento < fecha_turno:
-            return False
-
-        # Validación segura de novedades (evita el error si la propiedad no existe)
-        novedades = getattr(controlador, 'novedades', None)
-        if novedades:
-            for novedad in novedades:
-                if novedad.fecha_inicio <= fecha_turno <= novedad.fecha_fin:
-                    return False  # Bloqueo absoluto por novedad
-
-        return True
-
-    def verificar_regla_disponible_obligatorio(self, controlador_id: str, fecha_propuesta: date, codigo_turno_propuesto: str) -> bool:
+    def validar_nocturnos_consecutivos(self, controlador_id: str, fecha: date, codigo_turno: str) -> bool:
         """
-        Regla del Disponible: Si el día anterior tuvo un turno de Tarde (termina en T), 
-        Noche (N) o Horario de Oficina (HU), el día actual el único turno lógico/permitido 
-        por descanso es DISP (o novedad). Si intenta asignar otra cosa sin cumplir, retorna False.
+        Regla 1:
+        - Lunes a Jueves: Máximo 2 nocturnos (TN u ON) seguidos, el tercer día se debe descansar.
+        - Fin de semana (Viernes a Domingo): Máximo 3 noches, y el día siguiente al último servicio debe ser CP.
         """
-        # Si el turno que se quiere asignar ya es DISP, pasa sin problema
-        if codigo_turno_propuesto.upper() == 'DISP':
+        if codigo_turno not in ["TN", "ON"]:
             return True
 
-        dia_anterior = fecha_propuesta - timedelta(days=1)
-        turno_previo = self.db.query(TurnoAsignado).filter(
+        wd = fecha.weekday() # 0=Lunes, ..., 4=Viernes, 5=Sábado, 6=Domingo
+        ayer = fecha - timedelta(days=1)
+        anteayer = fecha - timedelta(days=2)
+
+        asig_ayer = self.db.query(TurnoAsignado).filter(
             TurnoAsignado.controlador_id == controlador_id,
-            TurnoAsignado.fecha == dia_anterior
+            TurnoAsignado.fecha == ayer
         ).first()
 
-        if turno_previo:
-            codigo_previo = turno_previo.turno_codigo.upper()
-            # Si el turno anterior fue Tarde, Noche o HU, se exige DISP
-            if codigo_previo.endswith('T') or codigo_previo.endswith('N') or codigo_previo == 'HU':
-                return False 
-        
+        asig_anteayer = self.db.query(TurnoAsignado).filter(
+            TurnoAsignado.controlador_id == controlador_id,
+            TurnoAsignado.fecha == anteayer
+        ).first()
+
+        es_noche_ayer = asig_ayer and asig_ayer.turno_codigo in ["TN", "ON"]
+        es_noche_anteayer = asig_anteayer and asig_anteayer.turno_codigo in ["TN", "ON"]
+
+        if wd <= 3: # Lunes a Jueves
+            if es_noche_ayer and es_noche_anteayer:
+                return False # Ya lleva 2 noches seguidas, el 3ro debe descansar
+        else: # Fin de semana (Vie, Sáb, Dom)
+            if es_noche_ayer and es_noche_anteayer:
+                trasanteayer = fecha - timedelta(days=3)
+                asig_tras = self.db.query(TurnoAsignado).filter(
+                    TurnoAsignado.controlador_id == controlador_id,
+                    TurnoAsignado.fecha == trasanteayer
+                ).first()
+                if asig_tras and asig_tras.turno_codigo in ["TN", "ON"]:
+                    return False # Máximo 3 noches en fin de semana
         return True
 
-    def validar_limite_noches(self, controlador_id: str, fecha_propuesta: date, codigo_turno: str) -> bool:
-        """Valida máximas noches consecutivas (2 entre semana, 3 en FDS)."""
-        if not codigo_turno.upper().endswith('N'):
-            return True
+    def validar_autonomia(self, controlador_id: str, codigo_turno: str, fecha: date) -> bool:
+        """
+        Regla 5: Si se escoge manualmente una autonomía con la que el personal no cuente, se alerta.
+        """
+        pos_map = {
+            "TM": "TORRE", "TT": "TORRE", "TN": "TORRE",
+            "AM": "AREA", "AT": "AREA",
+            "GM": "SUPERFICIE", "GT": "SUPERFICIE",
+            "OM": "OIA", "OT": "OIA", "ON": "OIA",
+            "SM": "SUPERVISOR", "ST": "SUPERVISOR"
+        }
 
-        conteo_noches = 0
-        dia_eval = fecha_propuesta - timedelta(days=1)
-        
-        while True:
-            turno_ant = self.db.query(TurnoAsignado).filter(
-                TurnoAsignado.controlador_id == controlador_id,
-                TurnoAsignado.fecha == dia_eval
-            ).first()
-            
-            if turno_ant and turno_ant.turno_codigo.upper().endswith('N'):
-                conteo_noches += 1
-                dia_eval -= timedelta(days=1)
-            else:
-                break
+        posicion_requerida = pos_map.get(codigo_turno)
+        if not posicion_requerida:
+            return True # Turnos especiales, administrativos o descanso no requieren autonomía operativa
 
-        # Fin de semana (Viernes=4, Sábado=5, Domingo=6) vs Entre semana (Lunes a Jueves)
-        es_fin_de_semana = fecha_propuesta.weekday() >= 4  
-        limite_permitido = 3 if es_fin_de_semana else 2
+        autonomia = self.db.query(Autonomia).filter(
+            Autonomia.controlador_id == controlador_id,
+            Autonomia.posicion == posicion_requerida,
+            Autonomia.fecha_vencimiento >= fecha
+        ).first()
 
-        if conteo_noches >= limite_permitido:
-            return False  # Incumple regla de descanso por noches consecutivas
+        return autonomia is not None
+
+    def validar_aptitud_y_novedades(self, controlador_id: str, fecha: date) -> bool:
+        ctrl = self.db.query(Controlador).filter(Controlador.id == controlador_id).first()
+        if not ctrl or not ctrl.activo:
+            return False
+        if ctrl.aptitud_psicofisica_vencimiento and ctrl.aptitud_psicofisica_vencimiento < fecha:
+            return False
+
+        # Verificar si tiene novedad programada (VAC, REEN, etc.)
+        nov = self.db.query(NovedadProgramada).filter(
+            NovedadProgramada.controlador_id == controlador_id,
+            NovedadProgramada.fecha_inicio <= fecha,
+            NovedadProgramada.fecha_fin >= fecha
+        ).first()
+        if nov:
+            return False
 
         return True
