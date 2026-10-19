@@ -524,7 +524,9 @@ async function actualizarCelda(controladorId, anio, mes, dia, nuevoCodigo) {
 
         if (!res.ok) {
             const err = await res.json();
-            alert(`⚠️ Restricción operativa: ${err.detail}`);
+            // Muestra la notificación de restricción operativa/falta de autonomía
+            alert(`⚠️ RESTRICCIÓN OPERATIVA:\n\n${err.detail}`);
+            // Recarga la matriz para revertir la selección manual fallida
             cargarMatriz();
             return;
         }
@@ -533,6 +535,7 @@ async function actualizarCelda(controladorId, anio, mes, dia, nuevoCodigo) {
     } catch (e) {
         console.error("Error actualizando celda:", e);
         alert("Error de conexión al actualizar la celda.");
+        cargarMatriz();
     }
 }
 
