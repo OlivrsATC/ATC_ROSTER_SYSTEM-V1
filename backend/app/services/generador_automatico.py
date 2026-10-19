@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 import uuid
 
 from app.models.controlador import Controlador
-from app.models.autonomia import Autonomia
 from app.models.asignacion import TurnoAsignado
 from app.services.motor_reglas import MotorReglasATC
 
@@ -29,11 +28,15 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
         "TN", "ON", "DISP"
     ]
 
+    # Conjunto de turnos pertenecientes a la Oficina de Información Aeronáutica (OIA)
+    turnos_oia = {"OM", "OT", "ON", "OD"}
+
     for dia in range(1, num_dias + 1):
         fecha_actual = date(anio, mes, dia)
-        asignados_hoy = set() # IDs de controladores ya ocupados en este día
-        
-        # 1. Asignar novedades (VAC) o aptitud psicofísica vencida
+        asignados_hoy = set()      # IDs de controladores asignados hoy
+        sin_aptitud_hoy = set()    # IDs de controladores sin aptitud psicofísica vigente hoy
+
+        # 1. Identificar registros existentes y controladores sin aptitud psicofísica
         for ctrl in controladores:
             existente = db.query(TurnoAsignado).filter(
                 TurnoAsignado.controlador_id == ctrl.id,
@@ -44,18 +47,11 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
                 asignados_hoy.add(ctrl.id)
                 continue
 
+            # Verificar si la aptitud psicofísica está vencida o si posee novedades
             if not motor.validar_aptitud_y_novedades(ctrl.id, fecha_actual):
-                db.add(TurnoAsignado(
-                    id=str(uuid.uuid4()),
-                    controlador_id=ctrl.id,
-                    turno_codigo="VAC",
-                    fecha=fecha_actual,
-                    asignado_automaticamente=True,
-                    modificado_manualmente=False
-                ))
-                asignados_hoy.add(ctrl.id)
+                sin_aptitud_hoy.add(ctrl.id)
 
-        # 2. Asignar Compensatorios (CP) obligatorios si el día anterior hicieron turno nocturno (Regla 1)
+        # 2. Asignar Compensatorios (CP) obligatorios si el día anterior hicieron turno nocturno
         ayer = fecha_actual - timedelta(days=1)
         for ctrl in controladores:
             if ctrl.id in asignados_hoy:
@@ -77,7 +73,7 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
                 ))
                 asignados_hoy.add(ctrl.id)
 
-        # 3. Cubrir los turnos operativos diarios requeridos sin repetir personal (Regla 2)
+        # 3. Cubrir los turnos operativos diarios requeridos
         for t_req in turnos_diarios_requeridos:
             candidato_encontrado = None
 
@@ -85,11 +81,15 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
             libres = [c for c in controladores if c.id not in asignados_hoy]
 
             for ctrl in libres:
-                # Regla 1: Validar límite de turnos nocturnos consecutivos (máx 2 L-J, máx 3 Viernes-Domingo)
+                # 👈 REGLA APTITUD PSICOFÍSICA: Si no tiene aptitud, SOLO puede hacer turnos de OIA
+                if ctrl.id in sin_aptitud_hoy and t_req not in turnos_oia and t_req != "DISP":
+                    continue
+
+                # Validar límite de turnos nocturnos consecutivos
                 if t_req in ["TN", "ON"] and not motor.validar_nocturnos_consecutivos(ctrl.id, fecha_actual, t_req):
                     continue
 
-                # 👈 Validación institucional centralizada en el motor (Verifica fecha y estado ACTIVO de la autonomía)
+                # Validar autonomía activa correspondiente
                 if not motor.validar_autonomia(ctrl.id, t_req, fecha_actual):
                     continue
 
@@ -107,7 +107,7 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
                 ))
                 asignados_hoy.add(candidato_encontrado.id)
 
-        # 4. A los controladores restantes sin asignar en el día, asignarles Horario de Oficina / Administrativo (HU)
+        # 4. Asignar Horario de Oficina / Administrativo (HU) al personal restante
         for ctrl in controladores:
             if ctrl.id not in asignados_hoy:
                 db.add(TurnoAsignado(
@@ -121,4 +121,4 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
                 asignados_hoy.add(ctrl.id)
 
     db.commit()
-    return {"mensaje": f"Cuadrante generado con éxito para {anio}-{mes:02d} cumpliendo la nueva directiva de reglas operativas."}
+    return {"mensaje": f"Cuadrante generado con éxito para {anio}-{mes:02d} aplicando restricciones de aptitud psicofísica."}
