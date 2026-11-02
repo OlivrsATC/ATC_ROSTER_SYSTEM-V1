@@ -74,35 +74,41 @@ def get_controladores(db: Session = Depends(get_db)):
         })
     return resultado
 
-@router.post("/")
-def crear_controlador(data: ControladorCreate, db: Session = Depends(get_db)):
+@router.post("/lote")
+def crear_controladores_en_lote(lista_data: list[ControladorCreate], db: Session = Depends(get_db)):
     """
-    Registra un nuevo controlador ubicándolo automáticamente al final de la lista 
-    (última posición de orden disponible) para no alterar tu jerarquía actual.
+    Registra múltiples controladores en lote a partir de una lista JSON.
     """
-    existing = db.query(Controlador).filter(Controlador.identificacion == data.identificacion).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Ya existe un controlador registrado con esta identificación.")
-    
     total_existentes = db.query(Controlador).count()
-    
-    nuevo = Controlador(
-        id=str(uuid.uuid4()),
-        identificacion=data.identificacion,
-        grado=data.grado,
-        numero_curso=data.numero_curso,
-        nombres=data.nombres,
-        apellidos=data.apellidos,
-        email=data.email,
-        rol=data.rol,
-        aptitud_psicofisica_vencimiento=data.aptitud_psicofisica_vencimiento,
-        activo=data.activo,
-        orden=total_existentes + 1
-    )
-    db.add(nuevo)
-    db.commit()
-    return {"mensaje": "Controlador registrado exitosamente.", "id": nuevo.id}
+    registrados = []
 
+    for i, data in enumerate(lista_data):
+        # Opcional: verificar si ya existe por identificación para evitar duplicados
+        existing = db.query(Controlador).filter(Controlador.identificacion == data.identificacion).first()
+        if existing:
+            continue  # O puedes lanzar una excepción si prefieres que falle todo el lote
+
+        nuevo = Controlador(
+            id=str(uuid.uuid4()),
+            identificacion=data.identificacion,
+            grado=data.grado,
+            numero_curso=data.numero_curso,
+            nombres=data.nombres,
+            apellidos=data.apellidos,
+            email=data.email,
+            rol=data.rol,
+            aptitud_psicofisica_vencimiento=data.aptitud_psicofisica_vencimiento,
+            activo=data.activo,
+            orden=total_existentes + 1 + i
+        )
+        db.add(nuevo)
+        registrados.append(nuevo)
+
+    db.commit()
+    return {
+        "mensaje": f"Se registraron {len(registrados)} controladores exitosamente en lote.",
+        "total_procesados": len(registrados)
+    }
 @router.put("/ordenar")
 def reordenar_controladores(data: ReordenarRequest, db: Session = Depends(get_db)):
     """

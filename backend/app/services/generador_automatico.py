@@ -1,10 +1,12 @@
 import calendar
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import extract
 import uuid
 
 from app.models.controlador import Controlador
 from app.models.asignacion import TurnoAsignado
+from app.models.novedad import NovedadProgramada
 from app.services.motor_reglas import MotorReglasATC
 
 def calcular_domingo_pascua(anio: int) -> date:
@@ -74,7 +76,15 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
     motor = MotorReglasATC(db)
     num_dias = calendar.monthrange(anio, mes)[1]
     
-    # Regla 6: Excluir al Jefe de Tránsito de la asignación automática
+    # 1. Limpiar turnos asignados automáticamente del mes
+    db.query(TurnoAsignado).filter(
+        extract('year', TurnoAsignado.fecha) == anio,
+        extract('month', TurnoAsignado.fecha) == mes,
+        TurnoAsignado.asignado_automaticamente == True
+    ).delete(synchronize_session=False)
+    db.commit()
+
+    # Excluir al Jefe de Tránsito de la asignación automática
     controladores = db.query(Controlador).filter(
         Controlador.activo == True,
         ~Controlador.rol.ilike("%JEFE_TRANSITO%"),
@@ -84,7 +94,27 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
     if not controladores:
         return {"error": "No hay controladores activos elegibles para generación automática."}
 
-    # Distribución equitativa de descanso de fin de semana (mínimo 1 fin de semana libre por controlador)
+    # Estructura de turnos en memoria: {ctrl_id: {fecha: codigo}}
+    turnos_mes = {ctrl.id: {} for ctrl in controladores}
+
+    # Contador de servicios operativos trabajados para distribución 100% equitativa
+    servicios_trabajados = {ctrl.id: 0 for ctrl in controladores}
+
+    # Respetar turnos asignados manualmente previamente
+    inicio_mes = date(anio, mes, 1)
+    fin_mes = date(anio, mes, num_dias)
+    turnos_existentes = db.query(TurnoAsignado).filter(
+        TurnoAsignado.fecha >= inicio_mes,
+        TurnoAsignado.fecha <= fin_mes
+    ).all()
+
+    for te in turnos_existentes:
+        if te.controlador_id in turnos_mes:
+            turnos_mes[te.controlador_id][te.fecha] = te.turno_codigo
+            if te.turno_codigo not in ["", "HU", "CP", "VAC", "VACACIONES"]:
+                servicios_trabajados[te.controlador_id] += 1
+
+    # Distribución equitativa de descansos de fin de semana libres (Sábado y Domingo vacíos)
     fines_de_semana = []
     dias_s = None
     for d in range(1, num_dias + 1):
@@ -102,16 +132,16 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
             sat, sun = fines_de_semana[wk_idx]
             descanso_fin_de_semana_map[ctrl.id] = {sat, sun}
 
-    # Turnos operacionales para días hábiles (Lunes a Viernes no festivos)
+    # Definición de Servicios Obligatorios
     turnos_habiles = [
-        "SM", "TM", "AM", "GM", "OM", 
-        "ST", "TT", "AT", "GT", "OT", 
-        "TN", "ON", "DISP"
+        "SM", "TM", "AM", "GM", "OM", "DISP",
+        "ST", "TT", "AT", "GT", "OT",
+        "TN", "ON"
     ]
 
-    # Turnos operacionales requeridos para fines de semana y festivos (incluyendo DISP)
     turnos_fin_de_semana_festivo = [
-        "SD", "TD", "AD", "OD", "TN", "ON", "DISP"
+        "SD", "TD", "AD", "OD", "DISP",
+        "TN", "ON"
     ]
 
     turnos_oia = {"OM", "OT", "ON", "OD"}
@@ -119,73 +149,93 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
     for dia in range(1, num_dias + 1):
         fecha_actual = date(anio, mes, dia)
         es_fest_wk = es_fin_de_semana_o_festivo(fecha_actual)
+        ayer = fecha_actual - timedelta(days=1)
         
         asignados_hoy = set()
         sin_aptitud_hoy = set()
 
-        # REGLA NUEVA: Si es fin de semana y corresponde al descanso equitativo del controlador, queda libre (casilla vacía)
-        if es_fest_wk:
+        # A. Respetar asignaciones previas/manuales
+        for ctrl in controladores:
+            if fecha_actual in turnos_mes[ctrl.id]:
+                asignados_hoy.add(ctrl.id)
+
+        # B. Asignar casilla vacía ("") para descanso libre en fin de semana
+        if es_fest_wk and fecha_actual.weekday() in [5, 6]:
             for ctrl in controladores:
+                if ctrl.id in asignados_hoy:
+                    continue
                 if fecha_actual in descanso_fin_de_semana_map.get(ctrl.id, set()):
+                    turnos_mes[ctrl.id][fecha_actual] = ""  # Casilla completamente vacía
                     asignados_hoy.add(ctrl.id)
 
-        # 1. Asignar novedades (VAC) o aptitud psicofísica vencida
+        # C. Novedades (VAC) y vencimiento de aptitud psicofísica
         for ctrl in controladores:
             if ctrl.id in asignados_hoy:
                 continue
 
-            existente = db.query(TurnoAsignado).filter(
-                TurnoAsignado.controlador_id == ctrl.id,
-                TurnoAsignado.fecha == fecha_actual
+            nov = db.query(NovedadProgramada).filter(
+                NovedadProgramada.controlador_id == ctrl.id,
+                NovedadProgramada.fecha_inicio <= fecha_actual,
+                NovedadProgramada.fecha_fin >= fecha_actual
             ).first()
-            
-            if existente:
+
+            if nov:
+                turnos_mes[ctrl.id][fecha_actual] = nov.tipo
                 asignados_hoy.add(ctrl.id)
                 continue
 
             if not motor.validar_aptitud_y_novedades(ctrl.id, fecha_actual):
                 sin_aptitud_hoy.add(ctrl.id)
 
-        # 2. Asignar Compensatorios (CP) obligatorios si el día anterior hicieron turno nocturno
-        ayer = fecha_actual - timedelta(days=1)
+        # D. COMPENSATORIO (CP) OBLIGATORIO POST-NOCTURNO (TN/ON)
         for ctrl in controladores:
             if ctrl.id in asignados_hoy:
                 continue
 
-            asig_ayer = db.query(TurnoAsignado).filter(
-                TurnoAsignado.controlador_id == ctrl.id,
-                TurnoAsignado.fecha == ayer
-            ).first()
-
-            if asig_ayer and asig_ayer.turno_codigo in ["TN", "ON"]:
-                db.add(TurnoAsignado(
-                    id=str(uuid.uuid4()),
-                    controlador_id=ctrl.id,
-                    turno_codigo="CP",
-                    fecha=fecha_actual,
-                    asignado_automaticamente=True,
-                    modificado_manualmente=False
-                ))
+            turno_ayer = turnos_mes[ctrl.id].get(ayer)
+            if turno_ayer in ["TN", "ON"]:
+                turnos_mes[ctrl.id][fecha_actual] = "CP"
                 asignados_hoy.add(ctrl.id)
 
         turnos_diarios_requeridos = turnos_fin_de_semana_festivo if es_fest_wk else turnos_habiles
 
-        # 3. Cubrir los turnos operativos diarios requeridos sin repetir personal
+        # E. Cobertura de turnos asignando primero a quienes tengan MENOS servicios trabajados
         for t_req in turnos_diarios_requeridos:
             candidato_encontrado = None
 
             libres = [c for c in controladores if c.id not in asignados_hoy]
+            
+            # ORDENAR EQUITATIVAMENTE POR MENOR CANTIDAD DE SERVICIOS PRESTADOS HASTA LA FECHA
+            libres_ordenados = sorted(libres, key=lambda c: servicios_trabajados[c.id])
 
-            for ctrl in libres:
-                # Si no tiene aptitud, solo OIA o DISP
+            for ctrl in libres_ordenados:
                 if ctrl.id in sin_aptitud_hoy and t_req not in turnos_oia and t_req != "DISP":
                     continue
 
-                # Validar límite de turnos nocturnos consecutivos
-                if t_req in ["TN", "ON"] and not motor.validar_nocturnos_consecutivos(ctrl.id, fecha_actual, t_req):
+                # Regla 3: Rotación de Disponibles (Si ayer hizo DISP, no repite DISP ni va a mañanas)
+                turno_ayer = turnos_mes[ctrl.id].get(ayer)
+                if turno_ayer == "DISP" and (t_req in ["DISP", "SM", "TM", "AM", "GM", "OM", "SD", "TD", "AD", "OD"]):
                     continue
 
-                # Validar autonomía activa correspondiente
+                # Regla 1: Validar límites de nocturnos consecutivos
+                if t_req in ["TN", "ON"]:
+                    noches_previas = 0
+                    curr = ayer
+                    while True:
+                        t_prev = turnos_mes[ctrl.id].get(curr)
+                        if t_prev in ["TN", "ON"]:
+                            noches_previas += 1
+                            curr -= timedelta(days=1)
+                        else:
+                            break
+                    
+                    wd = fecha_actual.weekday()
+                    if wd <= 3 and noches_previas >= 2: # Máximo 2 noches de Lunes a Jueves
+                        continue
+                    if wd >= 4 and noches_previas >= 3: # Máximo 3 noches de Viernes a Domingo
+                        continue
+
+                # Regla 5: Validar autonomía activa
                 if not motor.validar_autonomia(ctrl.id, t_req, fecha_actual):
                     continue
 
@@ -193,28 +243,31 @@ def generar_cuadrante_mes(db: Session, anio: int, mes: int):
                 break
 
             if candidato_encontrado:
-                db.add(TurnoAsignado(
-                    id=str(uuid.uuid4()),
-                    controlador_id=candidato_encontrado.id,
-                    turno_codigo=t_req,
-                    fecha=fecha_actual,
-                    asignado_automaticamente=True,
-                    modificado_manualmente=False
-                ))
+                turnos_mes[candidato_encontrado.id][fecha_actual] = t_req
                 asignados_hoy.add(candidato_encontrado.id)
+                servicios_trabajados[candidato_encontrado.id] += 1
 
-        # 4. A los controladores restantes sin asignar en el día, asignarles Horario de Oficina / Administrativo (HU)
+        # F. Asignación de días restantes: HU en días hábiles / Casilla vacía en fin de semana
         for ctrl in controladores:
             if ctrl.id not in asignados_hoy:
+                if es_fest_wk:
+                    turnos_mes[ctrl.id][fecha_actual] = "" # Vacío en fin de semana
+                else:
+                    turnos_mes[ctrl.id][fecha_actual] = "HU" # Horario Usual entre semana
+                asignados_hoy.add(ctrl.id)
+
+    # 4. Guardar resultados en la base de datos
+    for ctrl_id, dias_dict in turnos_mes.items():
+        for f_fecha, t_codigo in dias_dict.items():
+            if t_codigo != "":
                 db.add(TurnoAsignado(
                     id=str(uuid.uuid4()),
-                    controlador_id=ctrl.id,
-                    turno_codigo="HU",
-                    fecha=fecha_actual,
+                    controlador_id=ctrl_id,
+                    turno_codigo=t_codigo,
+                    fecha=f_fecha,
                     asignado_automaticamente=True,
                     modificado_manualmente=False
                 ))
-                asignados_hoy.add(ctrl.id)
 
     db.commit()
-    return {"mensaje": f"Cuadrante generado con éxito para {anio}-{mes:02d} aplicando turnos DISP y descansos de fin de semana libres."}
+    return {"mensaje": f"Cuadrante generado con éxito para {anio}-{mes:02d} con equidad de carga y celdas libres en fin de semana."}
