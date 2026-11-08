@@ -7,6 +7,9 @@ const API_URL = "http://127.0.0.1:8000/api";
 let listaControladoresCache = []; 
 let controladorSeleccionadoId = null; 
 let filaArrastrada = null; // Variable de estado para el Drag and Drop
+let globalDataStats = [];
+let chartServicios = null;
+let chartFinesSemana = null;
 
 /**
  * ============================================================================
@@ -854,4 +857,106 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+});
+
+async function cargarEstadisticasGraficas(anio = 2026, mes = 11) {
+    try {
+        const response = await fetch(`/api/reportes/estadisticas-graficas?anio=${anio}&mes=${mes}`);
+        if (!response.ok) throw new Error("Error al obtener estadísticas del servidor");
+        
+        const resultado = await response.json();
+        globalDataStats = resultado.data;
+
+        if (globalDataStats && globalDataStats.length > 0) {
+            renderizarGraficaFinesSemana(globalDataStats);
+            actualizarGraficaServicios();
+        } else {
+            console.warn("No hay datos de asignaciones para el período seleccionado.");
+        }
+    } catch (error) {
+        console.error("Error cargando estadísticas:", error);
+    }
+}
+
+function actualizarGraficaServicios() {
+    const servicioSeleccionado = document.getElementById('filtroServicio').value;
+    
+    const labels = globalDataStats.map(item => item.nombre);
+    const valores = globalDataStats.map(item => item.servicios[servicioSeleccionado] || 0);
+
+    const ctx = document.getElementById('graficaServicios').getContext('2d');
+    
+    if (chartServicios) {
+        chartServicios.destroy();
+    }
+
+    chartServicios = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Veces prestado: ${servicioSeleccionado}`,
+                data: valores,
+                backgroundColor: 'rgba(10, 37, 64, 0.7)',
+                borderColor: 'rgba(10, 37, 64, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+}
+
+function renderizarGraficaFinesSemana(data) {
+    const labels = data.map(item => item.nombre);
+    const trabajados = data.map(item => item.fines_de_semana_trabajados);
+    const descansados = data.map(item => item.fines_de_semana_descansados);
+
+    const ctx = document.getElementById('graficaFinesSemana').getContext('2d');
+    
+    if (chartFinesSemana) {
+        chartFinesSemana.destroy();
+    }
+
+    chartFinesSemana = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Fines de Semana Trabajados',
+                    data: trabajados,
+                    backgroundColor: 'rgba(217, 83, 79, 0.7)',
+                    borderColor: 'rgba(217, 83, 79, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Fines de Semana Descansados',
+                    data: descansados,
+                    backgroundColor: 'rgba(92, 184, 92, 0.7)',
+                    borderColor: 'rgba(92, 184, 92, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+}
+
+// LLAMAR AUTOMÁTICAMENTE AL CARGAR LA PÁGINA O SECCIÓN
+document.addEventListener("DOMContentLoaded", () => {
+    cargarEstadisticasGraficas(2026, 11);
 });

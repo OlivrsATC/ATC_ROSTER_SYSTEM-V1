@@ -57,7 +57,6 @@ def generar_orden_servicio_pdf(
         raise HTTPException(status_code=500, detail="La librería ReportLab no está instalada.")
     
     buffer = io.BytesIO()
-    # Márgenes seguros en horizontal (landscape)
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=landscape(letter), 
@@ -70,38 +69,37 @@ def generar_orden_servicio_pdf(
     
     styles = getSampleStyleSheet()
     
-    style_th = ParagraphStyle('TH', parent=styles['Normal'], fontSize=6.5, leading=8, fontName='Helvetica-Bold', alignment=1, textColor=colors.black)
-    style_date = ParagraphStyle('TD_Date', parent=styles['Normal'], fontSize=6, leading=7, fontName='Helvetica-Bold', alignment=1)
-    style_text = ParagraphStyle('TD_Text', parent=styles['Normal'], fontSize=6, leading=7, fontName='Helvetica', alignment=0)
-    style_center = ParagraphStyle('TD_Center', parent=styles['Normal'], fontSize=6, leading=7, fontName='Helvetica', alignment=1)
+    style_th = ParagraphStyle('TH', parent=styles['Normal'], fontSize=6, leading=7, fontName='Helvetica-Bold', alignment=1, textColor=colors.black)
+    style_date = ParagraphStyle('TD_Date', parent=styles['Normal'], fontSize=5.5, leading=6.5, fontName='Helvetica-Bold', alignment=1)
+    style_text = ParagraphStyle('TD_Text', parent=styles['Normal'], fontSize=5.5, leading=6.5, fontName='Helvetica', alignment=0)
+    style_center = ParagraphStyle('TD_Center', parent=styles['Normal'], fontSize=5.5, leading=6.5, fontName='Helvetica', alignment=1)
 
-    # 1. Cabecera principal (Título del Escuadrón)
+    # 1. Cabecera principal
     header_data = [
-        [Paragraph("<b>ESCUADRÓN DE NAVEGACIÓN AÉREA 115</b>", ParagraphStyle('H1', parent=styles['Normal'], fontSize=10, alignment=1, leading=12))]
+        [Paragraph("<b>ESCUADRÓN DE NAVEGACIÓN AÉREA 115</b>", ParagraphStyle('H1', parent=styles['Normal'], fontSize=9, alignment=1, leading=10))]
     ]
     t_header = Table(header_data, colWidths=[762])
     t_header.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 1, colors.black),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ]))
     elements.append(t_header)
     elements.append(Spacer(1, 2))
 
-    # Subtítulo de la semana
-    sub_text = f"SE NOMBRAN SERVICIOS / DISPONIBILIDADES PARA LA SEMANA DEL {fecha_inicio.strftime('%d/%m/%Y')} AL {fecha_fin.strftime('%d/%m/%Y')}".upper()
-    sub_data = [[Paragraph(f"<b>{sub_text}</b>", ParagraphStyle('H2', parent=styles['Normal'], fontSize=7.5, alignment=1, leading=9))]]
+    sub_text = f"SE NOMBRAN SERVICIOS / DISPONIBILIDADES PARA EL PERÍODO DEL {fecha_inicio.strftime('%d/%m/%Y')} AL {fecha_fin.strftime('%d/%m/%Y')}".upper()
+    sub_data = [[Paragraph(f"<b>{sub_text}</b>", ParagraphStyle('H2', parent=styles['Normal'], fontSize=7, alignment=1, leading=8))]]
     t_sub = Table(sub_data, colWidths=[762])
     t_sub.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 1, colors.black),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F2F2F2')),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(t_sub)
     elements.append(Spacer(1, 4))
 
-    # 2. Consultar asignaciones en el rango
+    # 2. Consultar asignaciones
     asignaciones = db.query(TurnoAsignado).filter(
         TurnoAsignado.fecha >= fecha_inicio,
         TurnoAsignado.fecha <= fecha_fin
@@ -126,20 +124,21 @@ def generar_orden_servicio_pdf(
 
     def construir_filas_lado(fechas_sub):
         filas_lado = []
-        spans_lado = []
-        row_idx_actual = 0
-        
         for f in fechas_sub:
             asigs = agrupado_por_fecha[f]
             dia_sem = dias_es[f.weekday()]
             str_fecha = f"{dia_sem}<br/>{f.strftime('%d/%m/%Y')}"
             
             if not asigs:
-                filas_lado.append([Paragraph(str_fecha, style_date), Paragraph("", style_text), Paragraph("", style_text), Paragraph("", style_center), Paragraph("", style_center)])
-                row_idx_actual += 1
+                filas_lado.append([
+                    Paragraph(str_fecha, style_date), 
+                    Paragraph("SIN ASIGNACIÓN", style_text), 
+                    Paragraph("-", style_text), 
+                    Paragraph("-", style_center), 
+                    Paragraph("-", style_center)
+                ])
             else:
-                start_row = row_idx_actual
-                for i, asig in enumerate(asigs):
+                for asig in asigs:
                     ctrl = db.query(Controlador).filter(Controlador.id == asig.controlador_id).first()
                     cargo = CONFIG_TURNOS.get(asig.turno_codigo.upper(), {"cargo": asig.turno_codigo, "horario": "07:00 - 19:00"})
                     
@@ -148,26 +147,26 @@ def generar_orden_servicio_pdf(
                     horario = cargo["horario"]
                     cargo_txt = cargo["cargo"]
                     
-                    f_cell = Paragraph(str_fecha, style_date) if i == 0 else Paragraph("", style_date)
                     filas_lado.append([
-                        f_cell,
+                        Paragraph(str_fecha, style_date),
                         Paragraph(cargo_txt, style_text),
                         Paragraph(nombre, style_text),
-                        Paragraph(cedula, style_center),
-                        Paragraph(horario, style_center)
+                        Paragraph(str(cedula), style_center),
+                        Paragraph(str(horario), style_center)
                     ])
-                    row_idx_actual += 1
-                
-                end_row = row_idx_actual - 1
-                if end_row > start_row:
-                    spans_lado.append((start_row, end_row))
-        return filas_lado, spans_lado
+        return filas_lado
 
-    filas_izq, spans_izq = construir_filas_lado(fechas_izquierda)
-    filas_der, spans_der = construir_filas_lado(fechas_derecha)
+    filas_izq = construir_filas_lado(fechas_izquierda)
+    filas_der = construir_filas_lado(fechas_derecha)
 
     max_filas = max(len(filas_izq), len(filas_der))
-    vacia_fila = [Paragraph("", style_date), Paragraph("", style_text), Paragraph("", style_text), Paragraph("", style_center), Paragraph("", style_center)]
+    vacia_fila = [
+        Paragraph("", style_date), 
+        Paragraph("", style_text), 
+        Paragraph("", style_text), 
+        Paragraph("", style_center), 
+        Paragraph("", style_center)
+    ]
     
     while len(filas_izq) < max_filas:
         filas_izq.append(list(vacia_fila))
@@ -190,6 +189,7 @@ def generar_orden_servicio_pdf(
     for i in range(max_filas):
         table_data.append(filas_izq[i] + filas_der[i])
 
+    # Anchos simétricos que suman exactamente 762 pt
     col_widths = [55, 110, 136, 40, 40, 55, 110, 136, 40, 40]
 
     t_style = [
@@ -197,33 +197,28 @@ def generar_orden_servicio_pdf(
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-        ('TOPPADDING', (0,0), (-1,-1), 1.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 1.5),
+        ('TOPPADDING', (0,0), (-1,-1), 1),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),
     ]
 
-    for start, end in spans_izq:
-        t_style.append(('SPAN', (0, start + 1), (0, end + 1)))
-    for start, end in spans_der:
-        t_style.append(('SPAN', (5, start + 1), (5, end + 1)))
-
-    # repeatRows=1 asegura que si el reporte se extiende, la cabecera se repita limpiamente
+    # repeatRows=1 asegura que la cabecera se repita limpiamente si pasa a otra página
     t_main = Table(table_data, colWidths=col_widths, repeatRows=1)
     t_main.setStyle(TableStyle(t_style))
     elements.append(t_main)
     elements.append(Spacer(1, 10))
 
-    # 3. Firmas Dinámicas al pie de página
+    # 3. Firmas Dinámicas
     firmas_data = [
         [
-            Paragraph(f"<b>{asesor_nav}</b>", ParagraphStyle('F1', parent=styles['Normal'], fontSize=7, alignment=1)),
-            Paragraph(f"<b>{comandante_gruco}</b>", ParagraphStyle('F2', parent=styles['Normal'], fontSize=7, alignment=1)),
-            Paragraph(f"<b>{comandante_esnav}</b>", ParagraphStyle('F3', parent=styles['Normal'], fontSize=7, alignment=1))
+            Paragraph(f"<b>{asesor_nav}</b>", ParagraphStyle('F1', parent=styles['Normal'], fontSize=6.5, alignment=1)),
+            Paragraph(f"<b>{comandante_gruco}</b>", ParagraphStyle('F2', parent=styles['Normal'], fontSize=6.5, alignment=1)),
+            Paragraph(f"<b>{comandante_esnav}</b>", ParagraphStyle('F3', parent=styles['Normal'], fontSize=6.5, alignment=1))
         ],
         ["\n___________________________________", "\n___________________________________", "\n___________________________________"],
         [
-            Paragraph("Técnico Asesor Serv. Nav. Aérea", ParagraphStyle('SF1', parent=styles['Normal'], fontSize=6, alignment=1)),
-            Paragraph("Comandante GRUCO-11", ParagraphStyle('SF2', parent=styles['Normal'], fontSize=6, alignment=1)),
-            Paragraph("Comandante ESNAV-115", ParagraphStyle('SF3', parent=styles['Normal'], fontSize=6, alignment=1))
+            Paragraph("Técnico Asesor Serv. Nav. Aérea", ParagraphStyle('SF1', parent=styles['Normal'], fontSize=5.5, alignment=1)),
+            Paragraph("Comandante GRUCO-11", ParagraphStyle('SF2', parent=styles['Normal'], fontSize=5.5, alignment=1)),
+            Paragraph("Comandante ESNAV-115", ParagraphStyle('SF3', parent=styles['Normal'], fontSize=5.5, alignment=1))
         ]
     ]
     t_firmas = Table(firmas_data, colWidths=[254, 254, 254])
